@@ -14,7 +14,7 @@ class FaceDetectorNode(Node):
         self.publisher = self.create_publisher(Float32MultiArray, '/face/landmarks', 10)
         self.bridge = CvBridge()
         self.detector = dlib.get_frontal_face_detector()
-        self.predictor = dlib.shape_predictor("src/drowsiness_detection_ros2/include/shape_predictor_68_face_landmarks_GTX.dat")
+        self.predictor = dlib.shape_predictor("src/drowsiness_detection/drowsiness_detection/shape_predictor_68_face_landmarks_GTX.dat")
         self.get_logger().info("---------------------Face Detector Node Started------------------")
 
     def image_callback(self, msg):
