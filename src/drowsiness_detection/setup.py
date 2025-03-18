@@ -7,8 +7,8 @@ setup(
     version='0.0.0',
     packages=find_packages(), 
     data_files=[
-        ('share/ament_index/resource_index/packages', ['resource/' + package_name]),  # 📌 패키지 인덱스 등록
-        ('share/' + package_name, ['package.xml']),  # 📌 package.xml 추가
+        ('share/ament_index/resource_index/packages', ['resource/' + package_name]), 
+        ('share/' + package_name, ['package.xml']), 
     ],
     install_requires=['setuptools'],
     zip_safe=True,
@@ -18,7 +18,10 @@ setup(
     license='TODO: License declaration',
     entry_points={
         'console_scripts': [
-            'drowsiness_detector = drowsiness_detection.drowsiness_detection_node:main',  # 📌 실행 경로 확인
+            'drowsiness_detector = drowsiness_detection.drowsiness_detection_node:main', 
+            'usb_cam = drowsiness_detection.usb_camera_node:main'
+            'face_detection = drowsiness_detection.face_detection_node:main'
+            'alert = drowsiness_detection.alert_node:main'
         ],
     },
 )
