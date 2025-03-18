@@ -19,9 +19,9 @@ setup(
     entry_points={
         'console_scripts': [
             'drowsiness_detector = drowsiness_detection.drowsiness_detection_node:main', 
-            'usb_cam = drowsiness_detection.usb_camera_node:main'
-            'face_detection = drowsiness_detection.face_detection_node:main'
-            'alert = drowsiness_detection.alert_node:main'
+            'usb_cam = drowsiness_detection.usb_camera_node:main',
+            'face_detection = drowsiness_detection.face_detection_node:main',
+            'alert = drowsiness_detection.alert_node:main',
         ],
     },
 )
