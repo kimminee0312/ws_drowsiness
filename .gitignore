@@ -1,0 +1,22 @@
+# 빌드 파일 & 실행 파일 제외
+*.log
+*.pyc
+*.pyo
+*.log
+__pycache__/
+
+# VSCode 설정 파일 제외
+.vscode/
+
+# ROS 2 colcon 빌드 디렉토리 제외
+install/
+build/
+log/
+
+# ROS 2 colcon 빌드 관련 폴더 무시
+colcon/
+
+drowsiness_detection_app/
+
+src/drowsiness_detection/drowsiness_detection/shape_predictor_68_face_landmarks_GTX.dat
+src/drowsiness_detection/drowsiness_detection/shape_predictor_68_face_landmarks.dat
