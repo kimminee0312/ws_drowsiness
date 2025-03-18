@@ -6,6 +6,7 @@ from cv_bridge import CvBridge
 import cv2
 import dlib
 import numpy as np
+import os
 
 class FaceDetectorNode(Node):
     def __init__(self):
@@ -14,7 +15,8 @@ class FaceDetectorNode(Node):
         self.publisher = self.create_publisher(Float32MultiArray, '/face/landmarks', 10)
         self.bridge = CvBridge()
         self.detector = dlib.get_frontal_face_detector()
-        self.predictor = dlib.shape_predictor("src/drowsiness_detection/drowsiness_detection/shape_predictor_68_face_landmarks_GTX.dat")
+        model_path = os.path.expanduser("~/workspace/ws_drowsiness/src/drowsiness_detection/drowsiness_detection/shape_predictor_68_face_landmarks.dat")
+        self.predictor = dlib.shape_predictor(model_path)
         self.get_logger().info("---------------------Face Detector Node Started------------------")
 
     def image_callback(self, msg):
@@ -30,7 +32,7 @@ class FaceDetectorNode(Node):
 
         # ROS 메시지 변환
         msg = Float32MultiArray()
-        msg.data = landmarks.flatten().tolist()
+        msg.data = landmarks.astype(np.float32).flatten().tolist()
         self.publisher.publish(msg)
 
 def main(args=None):
