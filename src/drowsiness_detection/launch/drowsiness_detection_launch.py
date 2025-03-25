@@ -3,12 +3,12 @@ from launch_ros.actions import Node
 
 def generate_launch_description():
     return LaunchDescription([
-        Node(
-            package='drowsiness_detection',
-            executable='usb_camera_node',
-            name='usb_camera_node',
-            output='screen'
-        ),
+        # Node(
+        #     package='drowsiness_detection',
+        #     executable='usb_camera_node',
+        #     name='usb_camera_node',
+        #     output='screen'
+        # ),
         Node(
             package='drowsiness_detection',
             executable='face_detection_node',
@@ -17,7 +17,7 @@ def generate_launch_description():
         ),
         Node(
             package='drowsiness_detection',
-            executable='drowsiness_detector',
+            executable='drowsiness_detection_node',
             name='drowsiness_detection_node',
             output='screen'
         ),

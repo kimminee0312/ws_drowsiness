@@ -3,6 +3,23 @@ import numpy as np
 from scipy.spatial import distance as dist
 import time
 
+def print_calibration_progress(current, total, bar_length=30):
+    """
+    콘솔에 ASCII 형태의 진행률 바(Progress Bar)를 표시하는 함수.
+    current: 현재 수집된 값(프레임 수 등)
+    total: 필요한 총 값
+    bar_length: 막대 길이 (문자 수)
+    """
+    ratio = current / total
+    filled_length = int(bar_length * ratio)
+
+    bar_str = "#" * filled_length + "-" * (bar_length - filled_length)
+    # \r 로 줄의 맨 앞으로 이동하고, end=""로 줄바꿈 없이 출력
+    print(f"\rCalibrating: |{bar_str}| {ratio*100:.1f}% ({current}/{total})", end="")
+
+    # 100% 도달 시 줄바꿈
+    if current == total:
+        print()
 
 class YawnDetector:
     def __init__(
@@ -93,9 +110,17 @@ def start_calibraion_instruction():
         print(f"단어: {syl}")
         time.sleep(3)
 
+    print("캘리브레이션 종료. 졸음 운전 감지 프로그램을 시작합니다.\n")
+
 if __name__ == "__main__":
     yawn_detector = YawnDetector
 
     start_calibraion_instruction()
 
+    import random
+    for i in range(80):
+        # 가짜 mar_avg
+        mar_fake = random.uniform(0.2, 0.6)
+        yawn_detector.calibrate_mouth(mar_fake)
+        time.sleep(0.05)
     
