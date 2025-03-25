@@ -8,7 +8,7 @@ class YawnDetector:
     def __init__(
         self, 
         calibration_frames=300, 
-        k_threshold=4, 
+        k_threshold=3, 
         moving_avg_window=20,
     ):
         self.calibration_frames = calibration_frames 

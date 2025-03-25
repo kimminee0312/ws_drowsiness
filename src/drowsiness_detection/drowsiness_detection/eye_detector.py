@@ -3,7 +3,7 @@ import numpy as np
 from scipy.spatial import distance as dist
 
 class EyeDetector:
-    def __init__(self, calibration_frames=70, k_eye=0.5):
+    def __init__(self, calibration_frames=300, k_eye=0.5):
         self.calibration_frames = calibration_frames
         self.k_eye = k_eye
         self.ear_values = []
