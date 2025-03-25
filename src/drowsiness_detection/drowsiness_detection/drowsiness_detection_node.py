@@ -22,16 +22,21 @@ class DrowsinessDetectionNode(Node):
         mar_avg = self.yawn_detector.detect(landmarks)
         nodding_status = self.nodding_detector.detect(landmarks)
 
-        if mar_avg > self.yawn_detector.threshold and nodding_status == "Nodding":
-            status = "Drowsy (Yawning & Nodding)"
-        elif ear_avg < self.eye_detector.eye_threshold:
-            status = "Drowsy (Eyes Closed)"
-        elif mar_avg > self.yawn_detector.threshold:
-            status = "Yawning"
-        elif nodding_status == "Nodding":
-            status = "Nodding"
+        self.yawn_detector.calibrate_mouth(mar_avg)
+
+        if not self.yawn_detector.calibrated:
+            status = "Calibrating ..."
         else:
-            status = "Normal"
+            if mar_avg > self.yawn_detector.threshold and nodding_status == "Nodding":
+                status = "Drowsy (Yawning & Nodding)"
+            elif ear_avg < self.eye_detector.eye_threshold:
+                status = "Drowsy (Eyes Closed)"
+            elif mar_avg > self.yawn_detector.threshold:
+                status = "Yawning"
+            elif nodding_status == "Nodding":
+                status = "Nodding"
+            else:
+                status = "Normal"
 
         self.publisher.publish(String(data=status))
 

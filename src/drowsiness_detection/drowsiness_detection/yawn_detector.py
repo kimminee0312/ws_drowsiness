@@ -7,7 +7,7 @@ import time
 class YawnDetector:
     def __init__(
         self, 
-        calibration_frames=70, 
+        calibration_frames=300, 
         k_threshold=4, 
         moving_avg_window=20,
     ):
