@@ -11,8 +11,17 @@ import os
 class FaceDetectorNode(Node):
     def __init__(self):
         super().__init__('face_detector_node')
-        self.subscription = self.create_subscription(Image, '/camera/image_raw', self.image_callback, 10)
-        self.publisher = self.create_publisher(Float32MultiArray, '/face/landmarks', 10)
+        self.subscription = self.create_subscription(
+            Image, 
+            '/camera/camera/color/image_raw', # Using RGBD Camera
+            # '/camera/image_raw',
+            self.image_callback, 
+            10)
+        self.publisher = self.create_publisher(
+            Float32MultiArray, 
+            '/face/landmarks', 
+            10)
+        
         self.bridge = CvBridge()
         self.detector = dlib.get_frontal_face_detector()
         model_path = os.path.expanduser("~/workspace/ws_drowsiness/src/drowsiness_detection/drowsiness_detection/shape_predictor_68_face_landmarks.dat")

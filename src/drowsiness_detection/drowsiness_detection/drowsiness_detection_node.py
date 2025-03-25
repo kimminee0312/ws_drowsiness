@@ -105,6 +105,9 @@ class DrowsinessDetectionNode(Node):
             status = "Drowsy (Eyes Closed and Nodding)"
         elif eyes_closed:
             status = "Drowsy (Eyes Closed)"
+
+        elif nodding_status == "Nodding":
+            status = "Nodding"
         
         else:
             status = "Normal"
