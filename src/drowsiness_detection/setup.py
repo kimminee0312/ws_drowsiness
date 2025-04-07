@@ -27,7 +27,7 @@ setup(
             # 'usb_cam = drowsiness_detection.usb_camera_node:main',
             'face_detection_node = drowsiness_detection.face_detection_node:main',
             'drowsiness_detection_node = drowsiness_detection.drowsiness_detection_node:main', 
-            'app_node = drowsiness_detection.drowsiness_app_bridge_node:main',
+            'drowsiness_app_bridge_node = drowsiness_detection.drowsiness_app_bridge_node:main',
             'alert_node = drowsiness_detection.alert_node:main',
         ],
     },
