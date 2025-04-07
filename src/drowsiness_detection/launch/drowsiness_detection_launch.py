@@ -23,8 +23,14 @@ def generate_launch_description():
         ),
         Node(
             package='drowsiness_detection',
-            executable='alert_node',
-            name='alert_node',
+            executable='drowsiness_app_bridge_node',
+            name='drowsiness_app_bridge_node',
             output='screen'
         ),
+        Node(
+            package='drowsiness_detection',
+            executable='alert_node',
+            name='alert_node',
+            output='screen' 
+        )
     ])
