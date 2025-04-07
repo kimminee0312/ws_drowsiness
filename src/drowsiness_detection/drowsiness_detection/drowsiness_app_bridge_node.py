@@ -25,7 +25,7 @@ class FirebaseBridgeNode(Node):
             10
         )
 
-        self.get_logger().info("✅ Firebase Bridge Node started!")
+        self.get_logger().info("✅ Drowsiness App Bridge Node started!")
 
     def status_callback(self, msg):
         state = msg.data
