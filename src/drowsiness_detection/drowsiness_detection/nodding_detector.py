@@ -37,7 +37,9 @@ class NoddingDetector:
             return "Nodding"
 
         # 조건 2: 고개가 서서히 한쪽으로 기울어진 경우
-        if abs(tilt_change) > self.side_drop_threshold:
-            return "Nodding (Side)"
+        elif abs(tilt_change) > self.side_drop_threshold:
+            return "Nodding_Side"
 
-        return "Normal"
+        else:
+            return "Normal"
+

@@ -102,13 +102,12 @@ class DrowsinessDetectionNode(Node):
             status = "하품 감지"
             
         elif eyes_closed and nodding_status == "Nodding":
-            status = "졸음 감지 / 눈 감김 감지 "
+            status = "졸음 감지 (앞) / 눈 감김 감지 "
+        elif eyes_closed and nodding_status == "Nodding_side":
+            status = "졸음 감지 (좌우) / 눈 감김 감지 "
         elif eyes_closed:
             status = "눈 감김 감지"
 
-        elif nodding_status == "Nodding":
-            status = "졸음 감지"
-        
         else:
             status = "Normal"
 
