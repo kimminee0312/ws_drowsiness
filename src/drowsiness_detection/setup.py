@@ -24,7 +24,7 @@ setup(
     license='TODO: License declaration',
     entry_points={
         'console_scripts': [
-            # 'usb_cam = drowsiness_detection.usb_camera_node:main',
+            'usb_camera_node = drowsiness_detection.usb_camera_node:main',
             'face_detection_node = drowsiness_detection.face_detection_node:main',
             'drowsiness_detection_node = drowsiness_detection.drowsiness_detection_node:main', 
             'drowsiness_app_bridge_node = drowsiness_detection.drowsiness_app_bridge_node:main',

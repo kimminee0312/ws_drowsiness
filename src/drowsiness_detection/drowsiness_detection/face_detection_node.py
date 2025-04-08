@@ -13,8 +13,8 @@ class FaceDetectorNode(Node):
         super().__init__('face_detector_node')
         self.subscription = self.create_subscription(
             Image, 
-            '/camera/camera/color/image_raw', # Using RGBD Camera
-            # '/camera/image_raw',
+            # '/camera/camera/color/image_raw', # Using RGBD Camera
+            '/camera/image_raw',
             self.image_callback, 
             10)
         self.publisher = self.create_publisher(
