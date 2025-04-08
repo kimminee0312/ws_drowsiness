@@ -93,21 +93,21 @@ class DrowsinessDetectionNode(Node):
         yawning = self.check_yawning(mar_avg)
         
         if eyes_closed and nodding_status == "Nodding" and yawning:
-            status = "Drowsiness Yawning"
+            status = "하품 감지"
         elif eyes_closed and yawning:
-            status = "Drowsiness Yawning"
+            status = "하품 감지"
         elif nodding_status == "Nodding" and yawning:
-            status = "Yawning"
+            status = "하품 감지"
         elif yawning:
-            status = "Yawning"
+            status = "하품 감지"
             
         elif eyes_closed and nodding_status == "Nodding":
-            status = "Drowsy (Eyes Closed and Nodding)"
+            status = "졸음 감지 / 눈 감김 감지 "
         elif eyes_closed:
-            status = "Drowsy (Eyes Closed)"
+            status = "눈 감김 감지"
 
         elif nodding_status == "Nodding":
-            status = "Nodding"
+            status = "졸음 감지"
         
         else:
             status = "Normal"
