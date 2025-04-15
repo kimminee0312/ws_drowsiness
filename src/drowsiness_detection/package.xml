@@ -6,6 +6,11 @@
   <description>A ROS package for drowsiness detection</description>
   <maintainer email="kimminee0312@konkuk.ac.kr">kml</maintainer>
   <license>TODO: License declaration</license>
+  
+  <buildtool_depend>rosidl_default_generators</buildtool_depend>
+  <build_depend>rosidl_default_generators</build_depend>
+  <exec_depend>rosidl_default_runtime</exec_depend>
+
 
   <depend>rclpy</depend>
   <depend>std_msgs</depend>
