@@ -1,5 +1,4 @@
 from setuptools import setup, find_packages
-import os
 
 package_name = 'drowsiness_detection'
 
@@ -24,10 +23,11 @@ setup(
     license='TODO: License declaration',
     entry_points={
         'console_scripts': [
+            'email_publisher_node = drowsiness_detection.email_publisher_node:main',
             'usb_camera_node = drowsiness_detection.usb_camera_node:main',
             'face_detection_node = drowsiness_detection.face_detection_node:main',
             'drowsiness_detection_node = drowsiness_detection.drowsiness_detection_node:main', 
-            'drowsiness_app_bridge_node = drowsiness_detection.drowsiness_app_bridge_node:main',
+            'drowsiness_status_save_node = drowsiness_detection.drowsiness_status_save_node:main',
             'alert_node = drowsiness_detection.alert_node:main',
         ],
     },
