@@ -5,6 +5,8 @@ import firebase_admin
 from firebase_admin import credentials, firestore
 import os
 
+
+
 class FirebaseBridgeNode(Node):
     def __init__(self):
         super().__init__('drowsiness_status_save_node')
@@ -12,6 +14,10 @@ class FirebaseBridgeNode(Node):
         # 키 파일 경로
         key_path = os.path.expanduser('~/workspace/ws_drowsiness/firebase-key.json')
 
+        # 🔧 Firebase 초기화 코드 추가!
+        cred = credentials.Certificate(key_path)
+        firebase_admin.initialize_app(cred)
+        self.db = firestore.client()
 
         # 현재 이메일을 저장하는 변수
         self.current_email = None
@@ -51,7 +57,7 @@ class FirebaseBridgeNode(Node):
             self.get_logger().info(f"상태 '{state}' \n Firebase에 업로드 완료 \n 유저: {self.current_email})")
         except Exception as e:
             self.get_logger().error(f"====== Firebase 업로드 실패: {e} ======")
-
+            
 def main(args=None):
     rclpy.init(args=args)
     node = FirebaseBridgeNode()

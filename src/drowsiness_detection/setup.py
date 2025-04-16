@@ -15,7 +15,6 @@ setup(
 
         ('share/' + package_name + '/launch', ['launch/drowsiness_detection_launch.py']),
 
-        ('share/' + package_name + '/srv', ['srv/Email.srv']),
     ],
     install_requires=['setuptools'],
     maintainer='kimminee',
