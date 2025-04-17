@@ -6,31 +6,51 @@ from rclpy.node import Node
 from std_msgs.msg import String
 from srv_interfaces.srv import Email 
 
-class EmailServiceNode(Node):
+class MultiEmailServiceNode(Node):
     def __init__(self):
-        super().__init__('email_service_node')
+        super().__init__('multi_email_service_node')
 
         # publisher
-        self.publisher_ = self.create_publisher(String, '/current_email', 10)
+        self.email_publisher = self.create_publisher(String, '/current_email', 10)
 
         # service 서버 생성
-        self.srv = self.create_service(Email, 'email_service', self.email_callback)
-        self.get_logger().info('✅ 이메일 서비스 서버 실행 중')
+        self.face_srv = self.create_service(Email, 'face_register_service', self.face_callback)
 
-    def email_callback(self, request, response):
+        self.drowy_srv = self.create_service(Email, 'start_drowsiness_service', self.drowy_callback)
+
+        self.get_logger().info(' ┌────────────────────────────────────────────┐')
+        self.get_logger().info(' |       Multi email service server start     |')
+        self.get_logger().info(' └────────────────────────────────────────────┘')
+
+
+    def face_callback(self, request, response):
+        email = request.email
         email_msg = String()
-        email_msg.data = request.email
-        self.publisher_.publish(email_msg)
+        email_msg.data = email
 
-        self.get_logger().info(f'📡 이메일 토픽 발행: {request.email}')
+        self.email_publisher.publish(email_msg)
+        self.get_logger().info(f'Email pub to face register: {email}')
+
         response.success = True
-        response.message = '이메일 발행 완료'
+        response.message = 'face_register_service completion'
+        return response
+
+    def drowy_callback(self, request, response):
+        email = request.email
+        email_msg = String()
+        email_msg.data = email
+
+        self.email_publisher.publish(email_msg)
+        self.get_logger().info(f'Email pub to start drowsiness: {email}')
+
+        response.success = True
+        response.message = 'start_drowsiness_service completion'
         return response
 
 
 def main(args=None):
     rclpy.init(args=args)
-    node = EmailServiceNode()
+    node = MultiEmailServiceNode()
     rclpy.spin(node)
     rclpy.shutdown()
 

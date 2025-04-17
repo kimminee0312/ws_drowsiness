@@ -14,13 +14,14 @@ class FirebaseBridgeNode(Node):
         # 키 파일 경로
         key_path = os.path.expanduser('~/workspace/ws_drowsiness/firebase-key.json')
 
-        # 🔧 Firebase 초기화 코드 추가!
+        #  Firebase 초기화 코드 추가
         cred = credentials.Certificate(key_path)
         firebase_admin.initialize_app(cred)
         self.db = firestore.client()
 
         # 현재 이메일을 저장하는 변수
         self.current_email = None
+        self.active = False
 
         # ROS 구독
         self.subscription_email = self.create_subscription(
@@ -38,15 +39,32 @@ class FirebaseBridgeNode(Node):
             10
         )
 
-        self.get_logger().info("====== Drowsiness Status Save Node Started ======")
+        self.get_logger().info(' ┌───────────────────────────────────────────────┐')
+        self.get_logger().info(' |       Drowsiness Status Save Node Started     |')
+        self.get_logger().info(' └───────────────────────────────────────────────┘')
 
     def email_callback(self, msg):
-        self.current_email = msg.data
-        self.get_logger().info(f"====== 현재 사용자 이메일 저장: {self.current_email} ======")
+        raw_email = msg.data
+
+        #  prefix 파싱
+        if raw_email.startswith("[drowsy]"):
+            self.active = True
+            self.current_email = raw_email.replace("[drowsy]", "")
+            self.get_logger().info(' ┌───────────────────────────────────────────────┐')
+            self.get_logger().info(' |         사용자 이메일 : {self.current_email}     |')
+            self.get_logger().info(' └───────────────────────────────────────────────┘')
+        
+        else:
+            self.active = False
+            self.current_email = None
+            self.get_logger().info(' ┌───────────────────────────────────────────────┐')
+            self.get_logger().info(' |          졸음 인식 요청 아님   저장 비활성화         |')
+            self.get_logger().info(' └───────────────────────────────────────────────┘')
+
 
     def status_callback(self, msg):
-        if not self.current_email:
-            self.get_logger().warn("====== 이메일 정보 없음 -> 상태 저장 건너뜀 ======")
+        if not self.active or not self.current_email:
+            self.get_logger().warn("───────────────────────────── 이메일 정보 없음 -> 상태 저장 건너뜀 ─────────────────────────────")
             return
 
         state = msg.data
@@ -54,9 +72,12 @@ class FirebaseBridgeNode(Node):
             self.db.collection('users').document(self.current_email).set({
                 'state': state
             }, merge=True)
-            self.get_logger().info(f"상태 '{state}' \n Firebase에 업로드 완료 \n 유저: {self.current_email})")
+            self.get_logger().info(' ┌─────────────────────────────────────────────────────────────────────────┐')
+            self.get_logger().info(f"|  상태 '{state}' \n Firebase에 업로드 완료 \n 사용자 : {self.current_email})  |")
+            self.get_logger().info(' └─────────────────────────────────────────────────────────────────────────┘')
+
         except Exception as e:
-            self.get_logger().error(f"====== Firebase 업로드 실패: {e} ======")
+            self.get_logger().error(f"───────────────────────────── Firebase 업로드 실패: {e} ─────────────────────────────")
             
 def main(args=None):
     rclpy.init(args=args)
