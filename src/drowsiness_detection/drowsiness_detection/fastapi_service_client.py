@@ -25,11 +25,11 @@ class FastAPIClientNode(Node):
 
         for name, client in self._clients.items():
             while not client.wait_for_service(timeout_sec=1.0):
-                self.get_logger().info(f"서비스 '{name}' 대기 중...")
+                self.get_logger().info(f"─────────────────────── 서비스 '{name}' 대기 중... ───────────────────────")
 
     def call_service(self, service_name: str, email: str):
         if service_name not in self._clients:
-            self.get_logger().error(f"❌ 존재하지 않는 서비스 요청: {service_name}")
+            self.get_logger().error(f" ──────────────────────── 존재하지 않는 서비스 요청: {service_name} ───────────────────────")
             return None
         
         clients = self._clients[service_name]

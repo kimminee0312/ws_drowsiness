@@ -26,8 +26,11 @@ class FaceDetectorNode(Node):
         self.detector = dlib.get_frontal_face_detector()
         model_path = os.path.expanduser("~/workspace/ws_drowsiness/src/drowsiness_detection/drowsiness_detection/shape_predictor_68_face_landmarks.dat")
         self.predictor = dlib.shape_predictor(model_path)
-        self.get_logger().info("---------------------Face Detector Node Started------------------")
-
+        
+        self.get_logger().info(' ┌────────────────────────────────────────────┐')
+        self.get_logger().info(' |           Face Detector Node Start         |')
+        self.get_logger().info(' └────────────────────────────────────────────┘')
+        
     def image_callback(self, msg):
         frame = self.bridge.imgmsg_to_cv2(msg, "bgr8")
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)

@@ -30,8 +30,10 @@ class DrowsinessDetectionNode(Node):
 
         self.yawn_start_time = None
         self.yawn_duration_threshold = 3
-
-        self.get_logger().info("=============== Drowsiness Detection Node Started ===============")
+        
+        self.get_logger().info(' ┌────────────────────────────────────────────┐')
+        self.get_logger().info(' |       Drowsiness Detection Node Start      |')
+        self.get_logger().info(' └────────────────────────────────────────────┘')
 
     # -----------------------------
     # 1) 눈 감김 시간 로직 함수

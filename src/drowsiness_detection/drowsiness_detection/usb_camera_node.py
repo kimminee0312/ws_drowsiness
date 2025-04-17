@@ -18,16 +18,18 @@ class UsbCameraNode(Node):
         self.cap.set(cv2.CAP_PROP_FPS, 30)  # 30FPS로 설정
 
         actual_fps = self.cap.get(cv2.CAP_PROP_FPS)
-        self.get_logger().info(f"✅ Camera FPS set to: {actual_fps}")
+        self.get_logger().info(' ┌────────────────────────────────────────────┐')
+        self.get_logger().info(' |       cCamera FPS set to: {actual_fps}     |')
+        self.get_logger().info(' └────────────────────────────────────────────┘')
 
         if not self.cap.isOpened():
-            self.get_logger().error("-------------Unable to open USB camera-------------")
-            raise RuntimeError("Failed to open USB camera")
+            self.get_logger().error("──────────────────────── Unable to open USB camera ───────────────────────")
+            raise RuntimeError("──────────────────────── Failed to open USB camera ───────────────────────")
 
     def publish_frame(self):
         ret, frame = self.cap.read()
         if not ret:
-            self.get_logger().warn("⚠️ Failed to capture frame from USB camera")
+            self.get_logger().warn("────────────────────────── Failed to capture frame from USB camera ──────────────────────────")
             return
 
         # BGR -> RGB 변환
@@ -59,7 +61,7 @@ def main(args=None):
             time.sleep(sleep_time)
 
     except KeyboardInterrupt:
-        node.get_logger().info("Shutting down node")
+        node.get_logger().info("────────────────────────── Shutting down node ──────────────────────────")
     finally:
         node.release()
         rclpy.shutdown()
