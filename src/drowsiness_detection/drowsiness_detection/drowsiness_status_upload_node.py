@@ -70,7 +70,7 @@ class FirebaseBridgeNode(Node):
         state = msg.data
         try:
             self.db.collection('users').document(self.current_email).set({
-                'state': state
+                'status': state
             }, merge=True)
             self.get_logger().info(' ┌─────────────────────────────────────────────────────────────────────────┐')
             self.get_logger().info(f"|  상태 '{state}' \n Firebase에 업로드 완료 \n 사용자 : {self.current_email})  |")
