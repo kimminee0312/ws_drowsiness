@@ -9,7 +9,7 @@ import os
 
 class FirebaseBridgeNode(Node):
     def __init__(self):
-        super().__init__('drowsiness_status_save_node')
+        super().__init__('drowsiness_status_upload_node')
 
         # 키 파일 경로
         key_path = os.path.expanduser('~/workspace/ws_drowsiness/firebase-key.json')

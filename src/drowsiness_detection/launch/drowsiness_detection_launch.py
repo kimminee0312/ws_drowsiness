@@ -23,8 +23,8 @@ def generate_launch_description():
         ),
         Node(
             package='drowsiness_detection',
-            executable='drowsiness_status_save_node',
-            name='drowsiness_status_publisher_node',
+            executable='drowsiness_status_upload_node',
+            name='drowsiness_status_upload_node',
             output='screen'
         ),
         Node(

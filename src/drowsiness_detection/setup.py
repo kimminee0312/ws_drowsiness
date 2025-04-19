@@ -23,11 +23,11 @@ setup(
     license='TODO: License declaration',
     entry_points={
         'console_scripts': [
-            'email_service_server = drowsiness_detection.email_service_server:main',
+            'multi_email_service_server = drowsiness_detection.multi_email_service_server:main',
             'usb_camera_node = drowsiness_detection.usb_camera_node:main',
             'face_detection_node = drowsiness_detection.face_detection_node:main',
             'drowsiness_detection_node = drowsiness_detection.drowsiness_detection_node:main', 
-            'drowsiness_status_save_node = drowsiness_detection.drowsiness_status_save_node:main',
+            'drowsiness_status_upload_node = drowsiness_detection.drowsiness_status_upload_node:main',
             'alert_node = drowsiness_detection.alert_node:main',
         ],
     },
