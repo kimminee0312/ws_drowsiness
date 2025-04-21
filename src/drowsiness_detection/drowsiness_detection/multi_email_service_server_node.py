@@ -8,7 +8,7 @@ from srv_interfaces.srv import Email
 
 class MultiEmailServiceNode(Node):
     def __init__(self):
-        super().__init__('multi_email_service_node')
+        super().__init__('multi_email_service_server_node')
 
         # publisher
         self.email_publisher = self.create_publisher(String, '/current_email', 10)

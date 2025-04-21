@@ -2,7 +2,7 @@ from setuptools import find_packages, setup
 import os
 from glob import glob
 
-package_name = 'face_identification'
+package_name = 'drowsy_system'
 
 setup(
     name=package_name,
@@ -19,12 +19,10 @@ setup(
     zip_safe=True,
     maintainer='kml',
     maintainer_email='kimminee0312@konkuk.ac.kr',
-    description='TODO: Package description',
+    description='Drowsy System',
     license='TODO: License declaration',
     entry_points={
         'console_scripts': [
-            'face_register_node = face_identification.face_register_node:main',
-            'face_identifier_node = face_identification.face_identifier_node:main',
         ],
     },
 )
