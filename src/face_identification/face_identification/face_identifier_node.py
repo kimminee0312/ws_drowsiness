@@ -30,6 +30,10 @@ class FaceIdentifierNode(Node):
         self.target_embedding = None
         self.authenticated = False
 
+        # 인증 상태 반복 발행용 타이머 추가 (1초 간격)
+        # self.timer = self.create_timer(1.0, self.publish_authentication_status)
+
+
         self.create_subscription(String, '/current_email', self.email_callback, 10)
         self.create_subscription(Image, '/camera/image_raw', self.image_callback, 10)
         self.publisher_ = self.create_publisher(Bool, '/user_authenticated', 10)
@@ -39,11 +43,11 @@ class FaceIdentifierNode(Node):
     def email_callback(self, msg):
         full_email = msg.data.strip()
 
-        if not full_email.startswith("[drowsiness_detection]"):
-            self.get_logger().info("⚠️ [drowsiness_detection] prefix 없음 → 무시됨")
+        if not full_email.startswith("[drowsy]"):
+            self.get_logger().info("⚠️ [drowsy] prefix 없음 → 무시됨")
             return
 
-        self.current_email = full_email.replace("[drowsiness_detection]", "").strip().lower()
+        self.current_email = full_email.replace("[drowsy]", "").strip().lower()
         self.get_logger().info(f"📩 인증용 이메일 수신: {self.current_email}")
 
         # Firestore에서 해당 사용자의 임베딩 로드
@@ -89,7 +93,10 @@ class FaceIdentifierNode(Node):
                     self.get_logger().warn("😕 얼굴 인증 실패")
 
                 return
-
+    
+    # def publish_authentication_status(self):
+    #     if self.authenticated:
+    #         self.publisher_.publish(Bool(data=True))
 
 def main(args=None):
     rclpy.init(args=args)

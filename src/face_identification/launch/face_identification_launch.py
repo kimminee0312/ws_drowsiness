@@ -8,5 +8,11 @@ def generate_launch_description():
             executable='face_register_node',
             name='face_register_node',
             output='screen'
+        ),
+        Node(
+            package='face_identification',
+            executable='face_identifier_node',
+            name='face_identifier_node',
+            output='screen'
         )
     ])

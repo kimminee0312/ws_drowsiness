@@ -22,6 +22,7 @@ class FirebaseBridgeNode(Node):
         # 현재 이메일을 저장하는 변수
         self.current_email = None
         self.active = False
+        self.prev_state = None  
 
         # ROS 구독
         self.subscription_email = self.create_subscription(
@@ -50,16 +51,13 @@ class FirebaseBridgeNode(Node):
         if raw_email.startswith("[drowsy]"):
             self.active = True
             self.current_email = raw_email.replace("[drowsy]", "")
-            self.get_logger().info(' ┌───────────────────────────────────────────────┐')
-            self.get_logger().info(' |         사용자 이메일 : {self.current_email}     |')
-            self.get_logger().info(' └───────────────────────────────────────────────┘')
         
         else:
             self.active = False
             self.current_email = None
-            self.get_logger().info(' ┌───────────────────────────────────────────────┐')
-            self.get_logger().info(' |          졸음 인식 요청 아님   저장 비활성화         |')
-            self.get_logger().info(' └───────────────────────────────────────────────┘')
+            self.get_logger().info(' ┌────────────────────────────────────────────────────────────────┐')
+            self.get_logger().info(' |            [drowsy] prefix 없음 → Firebase upload 비활성화        |')
+            self.get_logger().info(' └────────────────────────────────────────────────────────────────┘')
 
 
     def status_callback(self, msg):
@@ -68,6 +66,14 @@ class FirebaseBridgeNode(Node):
             return
 
         state = msg.data
+
+        # 상태가 이전과 같음 → 아무것도 하지 않음
+        if self.prev_state == state:
+            return
+        
+        # 상태 변경됨 → Firebase 업로드 & 터미널 출력 & 상태 업데이트
+        self.prev_state = state 
+        
         try:
             self.db.collection('users').document(self.current_email).set({
                 'status': state
