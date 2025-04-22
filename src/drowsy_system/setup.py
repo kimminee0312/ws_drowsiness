@@ -23,6 +23,8 @@ setup(
     license='TODO: License declaration',
     entry_points={
         'console_scripts': [
+            'drowsy_system_status_node = drowsy_system.drowsy_system_status_node:main',
+            'drowsy_system_gui_node = drowsy_system.drowsy_system_gui_node:main'
         ],
     },
 )
