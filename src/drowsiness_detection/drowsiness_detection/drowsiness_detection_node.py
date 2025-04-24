@@ -27,9 +27,6 @@ class DrowsinessDetectionNode(Node):
 
         self.eye_closed_start_time = None
         self.eye_closed_duration_threshold = 2.0 
-
-        self.yawn_start_time = None
-        self.yawn_duration_threshold = 3
         
         self.get_logger().info(' ┌────────────────────────────────────────────┐')
         self.get_logger().info(' |       Drowsiness Detection Node Start      |')
@@ -54,25 +51,6 @@ class DrowsinessDetectionNode(Node):
             self.eye_closed_start_time = None
         return False
     
-    # ----------------------------
-    # 2) 하품 시간 로직 함수
-    # -----------------------------
-    def check_yawning(self, mar_avg):
-        """
-        MAR > yawn_detector.threshold 상태가 3초 이상 유지되면 True
-        그렇지 않으면 False
-        """
-        if mar_avg > self.yawn_detector.threshold:
-            if self.yawn_start_time is None :
-                self.yawn_start_time = time.time()
-            else:
-                duration = time.time() - self.yawn_start_time 
-                if duration >=self.yawn_duration_threshold:
-                    return True
-        else:
-            self.yawn_start_time = None
-        return False
-    
     # -----------------------------
     # 3) 메인 콜백: 졸음 인식
     # -----------------------------
@@ -92,8 +70,8 @@ class DrowsinessDetectionNode(Node):
             return 
         
         eyes_closed = self.check_eyes_closed(ear_avg)
-        yawning = self.check_yawning(mar_avg)
-        
+        yawning = self.yawn_detector.status == "Yawning"
+
         if eyes_closed and nodding_status == "Nodding" and yawning:
             status = "하품 감지"
         elif eyes_closed and yawning:
