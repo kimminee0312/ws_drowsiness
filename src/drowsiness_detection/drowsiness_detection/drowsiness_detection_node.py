@@ -58,38 +58,39 @@ class DrowsinessDetectionNode(Node):
         landmarks = np.array(msg.data).reshape(-1, 2)
 
         ear_avg = self.eye_detector.detect(landmarks)
-        mar_avg = self.yawn_detector.detect(landmarks)
-        nodding_status = self.nodding_detector.detect(landmarks)
-
-        self.yawn_detector.calibrate_mouth(mar_avg)
         self.eye_detector.calibrate_eyes(ear_avg)
+
+        nodding_status = self.nodding_detector.detect(landmarks)
 
         if (not self.yawn_detector.calibrated) or (not self.eye_detector.eye_calibrated):
             status = "Calibrating ..."
             self.publisher.publish(String(data=status))
             return 
         
-        eyes_closed = self.check_eyes_closed(ear_avg)
-        yawning = self.yawn_detector.status == "Yawning"
+        eyes_closed_status = self.check_eyes_closed_status(ear_avg)
+        yawn_status = self.yawn_detector.status
+        
+        status_parts = []
 
-        if eyes_closed and nodding_status == "Nodding" and yawning:
-            status = "하품 감지"
-        elif eyes_closed and yawning:
-            status = "하품 감지"
-        elif nodding_status == "Nodding" and yawning:
-            status = "하품 감지"
-        elif yawning:
-            status = "하품 감지"
-            
-        elif eyes_closed and nodding_status == "Nodding":
-            status = "졸음 감지 (앞) / 눈 감김 감지 "
-        elif eyes_closed and nodding_status == "Nodding_side":
-            status = "졸음 감지 (좌우) / 눈 감김 감지 "
-        elif eyes_closed:
-            status = "눈 감김 감지"
+        if eyes_closed_status:
+            status_parts.append("눈 감김")
+
+        if nodding_status == "Nodding":
+            status_parts.append("앞으로 끄덕임")
+
+        if nodding_status == "Nodding_side":
+            status_parts.append("옆으로 끄덕임")
+
+        if yawn_status == "Yawn candidate":
+            status_parts.append("하품 후보")
+        elif yawn_status == "Yawning":
+            status_parts.append("하품 감지")
+
+        if not status_parts:
+            status = "Normal"
 
         else:
-            status = "Normal"
+            status = " / ".join(status_parts)
 
         self.publisher.publish(String(data=status))
 
