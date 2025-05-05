@@ -17,20 +17,26 @@ def generate_launch_description():
         ),
         Node(
             package='drowsiness_detection',
+            executable='yawn_detection_node',
+            name='yawn_detection_node',
+            output='screen'
+        ),
+        Node(
+            package='drowsiness_detection',
             executable='drowsiness_detection_node',
             name='drowsiness_detection_node',
             output='screen'
         ),
         Node(
             package='drowsiness_detection',
-            executable='drowsiness_status_upload_node',
-            name='drowsiness_status_upload_node',
+            executable='status_upload_node',
+            name='status_upload_node',
             output='screen'
         ),
-        # Node(
-        #     package='drowsiness_detection',
-        #     executable='alert_node',
-        #     name='alert_node',
-        #     output='screen' 
-        # )
+        Node(
+            package='drowsiness_detection',
+            executable='alert_node',
+            name='alert_node',
+            output='screen' 
+        )
     ])

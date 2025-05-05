@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
+import time
+import rclpy
+from rclpy.node import Node
+from std_msgs.msg import Float32MultiArray, String
 import numpy as np
 from scipy.spatial import distance as dist
-import time
 
 """""
 1.  calibration_frames : 시스템 시작 후 calibration_frames 시간을 정상 상태로 가정
@@ -14,6 +17,37 @@ import time
 
 
 """""
+class YawnDetectionNode(Node):
+    def __init__(self):
+        super().__init__('yawn_detection_node')
+        self.subscription = self.create_subscription(
+            Float32MultiArray, 
+            '/face/landmarks', 
+            self.yawn_detection_callback, 
+            10)
+        self.publisher = self.create_publisher(
+            String, 
+            '/yawn/status', 
+            10)
+        
+        self.yawn_detector = YawnDetector()
+
+    def yawn_detection_callback(self, msg):
+        landmarks = np.array(msg.data).reshape(-1, 2)
+
+        # 이동 평균 적용
+        mar_avg_values = self.yawn_detector.detect(landmarks)
+        # 캘리브레이션
+        self.yawn_detector.calibrate_mouth(mar_avg_values)
+
+        # 캘리브레이션 완료 시 하품 감지
+        if self.yawn_detector.calibrated:
+            self.yawn_detector.yawn_detect(mar_avg_values)
+
+        # 현재 하품 상태 퍼블리시
+        status = self.yawn_detector.status
+        self.publisher.publish(String(data=status))
+
 def print_calibration_progress(current, total, bar_length=30):
     """
     콘솔에 ASCII 형태의 진행률 바(Progress Bar)를 표시하는 함수.
@@ -65,6 +99,20 @@ class YawnDetector:
 
         self.status = "Calibrating..."
 
+    def detect(self, landmarks):
+        A = dist.euclidean(landmarks[50], landmarks[58]) 
+        B = dist.euclidean(landmarks[52], landmarks[56])  
+        C = dist.euclidean(landmarks[48], landmarks[54])  
+        mar_values = (A + B) / (2.0 * C)
+
+        # 이동 평균 적용
+        self.mar_moving.append(mar_values)
+        if len(self.mar_moving) > self.moving_avg_window:
+            self.mar_moving.pop(0)
+
+        mar_avg_values = np.mean(self.mar_moving)
+        return mar_avg_values
+
     def calibrate_mouth(self, mar_avg_values):
         if self.calibrated:
             return self.baseline_mean, self.baseline_std, self.threshold
@@ -83,10 +131,10 @@ class YawnDetector:
                 else:
                     self.calibrated = True
                     self.status = "Normal"
-                print(
-                    f"[Mouth Calibration Complete] Mean: {self.baseline_mean:.3f}, "
-                    f"Std: {self.baseline_std:.3f}, Threshold: {self.threshold:.3f}"
-                )
+                    print(
+                        f"[Mouth Calibration Complete] Mean: {self.baseline_mean:.3f}, "
+                        f"Std: {self.baseline_std:.3f}, Threshold: {self.threshold:.3f}"
+                    )
         return self.baseline_mean, self.baseline_std, self.threshold
     
     def reset_calibration(self):
@@ -100,23 +148,12 @@ class YawnDetector:
         self.threshold = 0.0
         self.status = "Recalibrating..."    
 
-    def detect(self, landmarks):
-        A = dist.euclidean(landmarks[50], landmarks[58]) 
-        B = dist.euclidean(landmarks[52], landmarks[56])  
-        C = dist.euclidean(landmarks[48], landmarks[54])  
-        mar_values = (A + B) / (2.0 * C)
-
-        # 이동 평균 적용
-        self.mar_moving.append(mar_values)
-        if len(self.mar_moving) > self.moving_avg_window:
-            self.mar_moving.pop(0)
-
-        mar_avg_values = np.mean(self.mar_moving)
+    def yawn_detect(self, mar_avg_values):
         current_time = time.time()
 
-        # mar 동적 캘리브레이션 → threshold 산출
-        self.calibrate_mouth(mar_avg_values)
-
+        if not self.calibrated:
+            return
+        
         # 하품 여부 판단
         if self.status == "Normal":
             if mar_avg_values >= self.threshold:
@@ -156,11 +193,9 @@ class YawnDetector:
             
 
         # 쿨다운으로 세션 기록
-        if (
-            self.last_yawn_time is not None
-            and current_time - self.last_yawn_time > self.cooldown_interval
-            and self.yawn_count > 0
-        ):
+        if (self.last_yawn_time is not None and 
+            current_time - self.last_yawn_time > self.cooldown_interval and 
+            self.yawn_count > 0):
             self.yawn_sessions.append({
                 "end_time": time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(current_time)),
                 "yawn_count": self.yawn_count,
@@ -169,18 +204,13 @@ class YawnDetector:
             self.last_yawn_time = None
 
         return mar_avg_values
-
-def start_calibraion_instruction():
-    print("캘리브레이션을 시작합니다. 화면에 보이는 단어를 정확한 입모양으로 말해주세요")
-    time.sleep(2)
-
-    syllables = ["아", "에", "이", "오", "우"]
-    for syl in syllables:
-        print(f"단어: {syl}")
-        time.sleep(3)
-
-    print("캘리브레이션 종료. 졸음 운전 감지 프로그램을 시작합니다.\n")
+    
+def main(args=None):
+    rclpy.init(args=args)
+    node = YawnDetectionNode()
+    rclpy.spin(node)
+    rclpy.shutdown()
 
 if __name__ == "__main__":
-    yawn_detector = YawnDetector()
+    main()
 

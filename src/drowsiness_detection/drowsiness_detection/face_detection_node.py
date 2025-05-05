@@ -22,7 +22,6 @@ class FaceDetectorNode(Node):
             self.auth_callback,
             10
         )
-
         self.subscription_email = self.create_subscription(
             String,
             '/current_email',
@@ -35,6 +34,7 @@ class FaceDetectorNode(Node):
             '/camera/image_raw',
             self.image_callback, 
             10)
+        
         self.publisher = self.create_publisher(
             Float32MultiArray, 
             '/face/landmarks', 

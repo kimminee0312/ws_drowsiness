@@ -9,7 +9,7 @@ import os
 
 class FirebaseBridgeNode(Node):
     def __init__(self):
-        super().__init__('drowsiness_status_upload_node')
+        super().__init__('status_upload_node')
 
         # 키 파일 경로
         key_path = os.path.expanduser('~/workspace/ws_drowsiness/firebase-key.json')
@@ -22,21 +22,25 @@ class FirebaseBridgeNode(Node):
         # 현재 이메일을 저장하는 변수
         self.current_email = None
         self.active = False
-        self.prev_state = None  
+        self.prev_drowsiness_status = None  
+        self.prev_yawn_status = None
 
-        # ROS 구독
         self.subscription_email = self.create_subscription(
             String,
             '/current_email',
             self.email_callback,
             10
         )
-
-        # ROS 2 구독 설정
+        self.subscription = self.create_subscription(
+            String,
+            '/yawn/status',
+            self.yawn_status_callback,
+            10
+        )
         self.subscription = self.create_subscription(
             String,
             '/drowsiness/status',
-            self.status_callback,
+            self.drowsiness_status_callback,
             10
         )
 
@@ -59,8 +63,32 @@ class FirebaseBridgeNode(Node):
             self.get_logger().info(' |            [drowsy] prefix 없음 → Firebase upload 비활성화        |')
             self.get_logger().info(' └────────────────────────────────────────────────────────────────┘')
 
+    def yawn_status_callback(self, msg):
+        if not self.active or not self.current_email:
+            self.get_logger().warn("───────────────────────────── 이메일 정보 없음 -> 상태 저장 건너뜀 ─────────────────────────────")
+            return
+        
+        state = msg.data
 
-    def status_callback(self, msg):
+        # 상태가 이전과 같음 → 아무것도 하지 않음
+        if self.prev_yawn_status == state:
+            return
+        
+        # 상태 변경됨 → Firebase 업로드 & 터미널 출력 & 상태 업데이트
+        self.prev_yawn_status = state 
+
+        try:
+            self.db.collection('users').document(self.current_email).set({
+                'yawn status': state
+            }, merge=True)
+            self.get_logger().info(' ┌─────────────────────────────────────────────────────────────────────────┐')
+            self.get_logger().info(f"|  하품 상태 '{state}' \n Firebase에 업로드 완료 \n 사용자 : {self.current_email})  |")
+            self.get_logger().info(' └─────────────────────────────────────────────────────────────────────────┘')
+
+        except Exception as e:
+            self.get_logger().error(f"───────────────────────────── Firebase 업로드 실패: {e} ─────────────────────────────")
+           
+    def drowsiness_status_callback(self, msg):
         if not self.active or not self.current_email:
             self.get_logger().warn("───────────────────────────── 이메일 정보 없음 -> 상태 저장 건너뜀 ─────────────────────────────")
             return
@@ -68,18 +96,18 @@ class FirebaseBridgeNode(Node):
         state = msg.data
 
         # 상태가 이전과 같음 → 아무것도 하지 않음
-        if self.prev_state == state:
+        if self.prev_drowsiness_status == state:
             return
         
         # 상태 변경됨 → Firebase 업로드 & 터미널 출력 & 상태 업데이트
-        self.prev_state = state 
+        self.prev_drowsiness_status = state 
         
         try:
             self.db.collection('users').document(self.current_email).set({
-                'status': state
+                'drowsiness tatus': state
             }, merge=True)
             self.get_logger().info(' ┌─────────────────────────────────────────────────────────────────────────┐')
-            self.get_logger().info(f"|  상태 '{state}' \n Firebase에 업로드 완료 \n 사용자 : {self.current_email})  |")
+            self.get_logger().info(f"|  졸음 상태 '{state}' \n Firebase에 업로드 완료 \n 사용자 : {self.current_email})  |")
             self.get_logger().info(' └─────────────────────────────────────────────────────────────────────────┘')
 
         except Exception as e:

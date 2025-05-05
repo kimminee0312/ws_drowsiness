@@ -5,29 +5,36 @@ from std_msgs.msg import Float32MultiArray, String
 import numpy as np
 
 from .eye_detector import EyeDetector
-from .yawn_detector import YawnDetector
 from .nodding_detector import NoddingDetector
 
 class DrowsinessDetectionNode(Node):
     def __init__(self):
         super().__init__('drowsiness_detection_node')
+
         self.subscription = self.create_subscription(
             Float32MultiArray, 
             '/face/landmarks', 
             self.drowsiness_detection_callback, 
             10)
+        self.subscription = self.create_subscription(
+            String, 
+            '/yawn/status',
+            self.yawn_status_callback, 
+            10)
+        
         self.publisher = self.create_publisher(
             String, 
             '/drowsiness/status', 
             10)
         
         self.eye_detector = EyeDetector()
-        self.yawn_detector = YawnDetector()
         self.nodding_detector = NoddingDetector()
 
         self.eye_closed_start_time = None
         self.eye_closed_duration_threshold = 2.0 
         
+        self.yawn_status = None
+
         self.get_logger().info(' ┌────────────────────────────────────────────┐')
         self.get_logger().info(' |       Drowsiness Detection Node Start      |')
         self.get_logger().info(' └────────────────────────────────────────────┘')
@@ -52,38 +59,47 @@ class DrowsinessDetectionNode(Node):
         return False
     
     # -----------------------------
+    # 2) 하품 상태 감지 콜백
+    # -----------------------------
+    def yawn_status_callback(self, msg):
+        self.yawn_status = msg.data 
+
+    # -----------------------------
     # 3) 메인 콜백: 졸음 인식
     # -----------------------------
     def drowsiness_detection_callback(self, msg):
         landmarks = np.array(msg.data).reshape(-1, 2)
 
         ear_avg = self.eye_detector.detect(landmarks)
-        self.eye_detector.calibrate_eyes(ear_avg)
 
+        if self.yawn_status in ["Calibrating..." , "Recalibrating..."]:
+            if not self.eye_detector.eye_calibrated:
+                self.eye_detector.calibrate_eyes(ear_avg)
+
+            status = (
+                "Calibrating..." if self.yawn_status =="Calibrating..."
+                else "Recalibrating..."
+            )
+            self.publisher.publish(String(data=status))    
+            return
+        
+        eyes_closed_status = self.check_eyes_closed(ear_avg)
         nodding_status = self.nodding_detector.detect(landmarks)
 
-        if (not self.yawn_detector.calibrated) or (not self.eye_detector.eye_calibrated):
-            status = "Calibrating ..."
-            self.publisher.publish(String(data=status))
-            return 
-        
-        eyes_closed_status = self.check_eyes_closed_status(ear_avg)
-        yawn_status = self.yawn_detector.status
-        
         status_parts = []
 
         if eyes_closed_status:
             status_parts.append("눈 감김")
 
-        if nodding_status == "Nodding":
+        if nodding_status == "Nodding" and eyes_closed_status:
             status_parts.append("앞으로 끄덕임")
 
-        if nodding_status == "Nodding_side":
+        if nodding_status == "Nodding_side" and eyes_closed_status:
             status_parts.append("옆으로 끄덕임")
 
-        if yawn_status == "Yawn candidate":
+        if self.yawn_status == "Yawn candidate":
             status_parts.append("하품 후보")
-        elif yawn_status == "Yawning":
+        elif self.yawn_status == "Yawning":
             status_parts.append("하품 감지")
 
         if not status_parts:
