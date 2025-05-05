@@ -1,7 +1,7 @@
 import time
 import rclpy
 from rclpy.node import Node
-from std_msgs.msg import Float32MultiArray, String
+from std_msgs.msg import Float32MultiArray, String, Float32
 import numpy as np
 
 from .eye_detector import EyeDetector
@@ -27,7 +27,12 @@ class DrowsinessDetectionNode(Node):
             '/drowsiness/status', 
             10)
         
-        self.eye_detector = EyeDetector()
+        self.publisher_ear = self.create_publisher(
+            Float32, 
+            '/debug/ear/status', 
+            10)
+        
+        self.eye_detector = EyeDetector(self.get_logger())
         self.nodding_detector = NoddingDetector()
 
         self.eye_closed_start_time = None
@@ -40,7 +45,20 @@ class DrowsinessDetectionNode(Node):
         self.get_logger().info(' └────────────────────────────────────────────┘')
 
     # -----------------------------
-    # 1) 눈 감김 시간 로직 함수
+    # 1) 캘리브레이션 함수 
+    # -----------------------------
+    def is_calibrating(self, ear_avg):
+        if self.yawn_status in ["Calibrating...", "Recalibrating..."]:
+            if not self.eye_detector.eye_calibrated:
+                self.eye_detector.calibrate_eyes(ear_avg)
+
+            status = self.yawn_status 
+            self.publisher.publish(String(data=status))
+            return True
+        return False
+
+    # -----------------------------
+    # 2) 눈 감김 시간 로직 함수
     # -----------------------------
     def check_eyes_closed(self, ear_avg):
         """
@@ -59,33 +77,15 @@ class DrowsinessDetectionNode(Node):
         return False
     
     # -----------------------------
-    # 2) 하품 상태 감지 콜백
+    # 3) 하품 상태 감지 콜백
     # -----------------------------
     def yawn_status_callback(self, msg):
         self.yawn_status = msg.data 
 
     # -----------------------------
-    # 3) 메인 콜백: 졸음 인식
+    # 4) 졸음 분석 및 점수 부여 알고리즘 
     # -----------------------------
-    def drowsiness_detection_callback(self, msg):
-        landmarks = np.array(msg.data).reshape(-1, 2)
-
-        ear_avg = self.eye_detector.detect(landmarks)
-
-        if self.yawn_status in ["Calibrating..." , "Recalibrating..."]:
-            if not self.eye_detector.eye_calibrated:
-                self.eye_detector.calibrate_eyes(ear_avg)
-
-            status = (
-                "Calibrating..." if self.yawn_status =="Calibrating..."
-                else "Recalibrating..."
-            )
-            self.publisher.publish(String(data=status))    
-            return
-        
-        eyes_closed_status = self.check_eyes_closed(ear_avg)
-        nodding_status = self.nodding_detector.detect(landmarks)
-
+    def analyze_drowsiness(self, eyes_closed_status, nodding_status, yawn_status):
         status_parts = []
 
         if eyes_closed_status:
@@ -94,20 +94,42 @@ class DrowsinessDetectionNode(Node):
         if nodding_status == "Nodding" and eyes_closed_status:
             status_parts.append("앞으로 끄덕임")
 
-        if nodding_status == "Nodding_side" and eyes_closed_status:
+        if nodding_status == "Nodding_Side" and eyes_closed_status:
             status_parts.append("옆으로 끄덕임")
 
-        if self.yawn_status == "Yawn candidate":
+        if yawn_status == "Yawn candidate":
             status_parts.append("하품 후보")
-        elif self.yawn_status == "Yawning":
+        elif yawn_status == "Yawning":
             status_parts.append("하품 감지")
 
         if not status_parts:
-            status = "Normal"
+            return "Normal"
 
         else:
-            status = " / ".join(status_parts)
+            return " / ".join(status_parts)
 
+    # -----------------------------
+    # 5) 메인 콜백
+    # -----------------------------
+    def drowsiness_detection_callback(self, msg):
+        landmarks = np.array(msg.data).reshape(-1, 2)
+
+        ear_avg = self.eye_detector.detect(landmarks)
+        self.publisher_ear.publish(Float32(data=ear_avg))
+
+        if self.is_calibrating(ear_avg):
+            return
+        
+        eyes_closed_status = self.check_eyes_closed(ear_avg)
+        nodding_status = self.nodding_detector.detect(landmarks)
+        yawn_status = self.yawn_status
+
+        # self.get_logger().info(f"[EAR avg]: {ear_avg:.3f}, Threshold: {self.eye_detector.eye_threshold:.3f}")
+        # self.get_logger().info(f"[눈 감김 판단]: {eyes_closed_status}")
+        # self.get_logger().info(f"[끄덕임 판단]: {nodding_status}")
+        # self.get_logger().info(f"[하품 상태]: {yawn_status}")
+
+        status = self.analyze_drowsiness(eyes_closed_status, nodding_status, yawn_status)
         self.publisher.publish(String(data=status))
 
 def main(args=None):

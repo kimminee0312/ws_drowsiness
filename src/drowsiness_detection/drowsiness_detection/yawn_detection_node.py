@@ -30,7 +30,11 @@ class YawnDetectionNode(Node):
             '/yawn/status', 
             10)
         
-        self.yawn_detector = YawnDetector()
+        self.yawn_detector = YawnDetector(self.get_logger())
+
+        self.get_logger().info(' ┌───────────────────────────────────────────────┐')
+        self.get_logger().info(' |            Yawn Detection Node Start          |')
+        self.get_logger().info(' └───────────────────────────────────────────────┘')
 
     def yawn_detection_callback(self, msg):
         landmarks = np.array(msg.data).reshape(-1, 2)
@@ -47,35 +51,18 @@ class YawnDetectionNode(Node):
         # 현재 하품 상태 퍼블리시
         status = self.yawn_detector.status
         self.publisher.publish(String(data=status))
-
-def print_calibration_progress(current, total, bar_length=30):
-    """
-    콘솔에 ASCII 형태의 진행률 바(Progress Bar)를 표시하는 함수.
-    current: 현재 수집된 값(프레임 수 등)
-    total: 필요한 총 값
-    bar_length: 막대 길이 (문자 수)
-    """
-    ratio = current / total
-    filled_length = int(bar_length * ratio)
-
-    bar_str = "#" * filled_length + "-" * (bar_length - filled_length)
-    # \r 로 줄의 맨 앞으로 이동하고, end=""로 줄바꿈 없이 출력
-    print(f"\rCalibrating: |{bar_str}| {ratio*100:.1f}% ({current}/{total})", end="")
-
-    # 100% 도달 시 줄바꿈
-    if current == total:
-        print()
-
 class YawnDetector:
     def __init__(
         self, 
+        logger,
         calibration_frames=300, 
         k_threshold=3, 
         moving_avg_window=20,
         time_threshold=3,
         keep_time_threshold=1,
-        cooldown_interval=5,
+        cooldown_interval=180, 
     ):
+        self.logger = logger
         self.calibration_frames = calibration_frames 
         self.k_threshold = k_threshold  
         self.moving_avg_window = moving_avg_window
@@ -126,15 +113,24 @@ class YawnDetector:
                 self.threshold = self.baseline_mean + self.k_threshold * self.baseline_std
 
                 if self.threshold < 0.5 :
-                    print("Recalibrating... Threshold too low")
+                    self.logger.info(' ┌─────────────────────────────────────────────────────────────────────────────┐')
+                    self.logger.info(' |          Recalibrating... Threshold too low                                 |')
+                    self.logger.info(' └─────────────────────────────────────────────────────────────────────────────┘')
+                                     
+                    self.reset_calibration()
+                elif self.threshold > 0.9 :
+                    self.logger.info(' ┌─────────────────────────────────────────────────────────────────────────────┐')
+                    self.logger.info(' |          Recalibrating... Threshold too high                                |')
+                    self.logger.info(' └─────────────────────────────────────────────────────────────────────────────┘')
                     self.reset_calibration()
                 else:
                     self.calibrated = True
                     self.status = "Normal"
-                    print(
-                        f"[Mouth Calibration Complete] Mean: {self.baseline_mean:.3f}, "
-                        f"Std: {self.baseline_std:.3f}, Threshold: {self.threshold:.3f}"
-                    )
+                    self.logger.info(' ┌─────────────────────────────────────────────────────────────────────────────┐')
+                    self.logger.info(' |          Mouth Calibration Complete                                         |')
+                    self.logger.info(f' |          Mean: {self.baseline_mean:.3f}, Std: {self.baseline_std:.3f}, Threshold: {self.threshold:.3f}                          |')
+                    self.logger.info(' └─────────────────────────────────────────────────────────────────────────────┘')
+        
         return self.baseline_mean, self.baseline_std, self.threshold
     
     def reset_calibration(self):
@@ -200,6 +196,10 @@ class YawnDetector:
                 "end_time": time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(current_time)),
                 "yawn_count": self.yawn_count,
             })
+            self.logger.info(' ┌─────────────────────────────────────────────────────────────────────────────────────┐')
+            self.logger.info(f' |          Yawn Session Record  {self.yawn_sessions[-1]}')
+            self.logger.info(' └─────────────────────────────────────────────────────────────────────────────────────┘')
+
             self.yawn_count = 0
             self.last_yawn_time = None
 

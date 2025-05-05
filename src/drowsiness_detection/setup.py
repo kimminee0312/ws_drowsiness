@@ -19,7 +19,9 @@ setup(
 
 
     ],
-    install_requires=['setuptools'],
+    install_requires=[''
+    'plotly>=5.0.0',
+    ],
     maintainer='kimminee',
     maintainer_email='kimminee0312@konkuk.ac.kr',
     description='Drowsiness detection package for ROS 2',

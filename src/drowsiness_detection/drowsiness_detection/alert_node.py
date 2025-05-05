@@ -5,6 +5,10 @@ from std_msgs.msg import String
 class AlertNode(Node):
     def __init__(self):
         super().__init__('alert_node')
+
+        self.yawn_status = "Normal"
+        self.drowsy_status = "Normal"
+
         self.subscription = self.create_subscription(
             String, 
             '/yawn/status',
@@ -27,12 +31,21 @@ class AlertNode(Node):
         self.get_logger().info(' └────────────────────────────────────────────┘')
 
     def yawn_callback(self, msg):
-        if msg.data.startswith("Yawing"):
-            self.get_logger().warn(f"하품 감지됨 - 가벼운 스트레칭을 해보세요!")
+        if msg.data.startswith("Yawning"):
+            alert_msg = String()
+            alert_msg.data = "하품 감지 - 가벼운 스트레칭을 해보세요"
+            self.publisher.publish(alert_msg)
 
     def drowsiness_callback(self, msg):
         if msg.data.startswith("눈 감김"):
-            self.get_logger().warn(f"정면을 주시해 주세요")
+            alert_msg = String()
+            alert_msg.data = "졸음 감지 - 정면을 주시해 주세요"
+            self.publisher.publish(alert_msg)
+
+        elif msg.data.startswith("Normal"):
+            alert_msg = String()
+            alert_msg.data = "안전운전하세요"
+            self.publisher.publish(alert_msg)
 
 def main(args=None):
     rclpy.init(args=args)

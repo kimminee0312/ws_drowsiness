@@ -45,7 +45,7 @@ class FirebaseBridgeNode(Node):
         )
 
         self.get_logger().info(' ┌───────────────────────────────────────────────┐')
-        self.get_logger().info(' |       Drowsiness Status Save Node Started     |')
+        self.get_logger().info(' |             Status Upload Node Started        |')
         self.get_logger().info(' └───────────────────────────────────────────────┘')
 
     def email_callback(self, msg):
@@ -81,8 +81,11 @@ class FirebaseBridgeNode(Node):
             self.db.collection('users').document(self.current_email).set({
                 'yawn status': state
             }, merge=True)
+            # self.get_logger().info(' ┌─────────────────────────────────────────────────────────────────────────┐')
+            # self.get_logger().info(f" |  하품 상태 '{state}' \n Firebase에 업로드 완료 \n 사용자 : {self.current_email})  |")
+            # self.get_logger().info(' └─────────────────────────────────────────────────────────────────────────┘')
             self.get_logger().info(' ┌─────────────────────────────────────────────────────────────────────────┐')
-            self.get_logger().info(f"|  하품 상태 '{state}' \n Firebase에 업로드 완료 \n 사용자 : {self.current_email})  |")
+            self.get_logger().info(f" |  하품 상태 '{state}' ")
             self.get_logger().info(' └─────────────────────────────────────────────────────────────────────────┘')
 
         except Exception as e:
@@ -106,8 +109,11 @@ class FirebaseBridgeNode(Node):
             self.db.collection('users').document(self.current_email).set({
                 'drowsiness tatus': state
             }, merge=True)
+            # self.get_logger().info(' ┌─────────────────────────────────────────────────────────────────────────┐')
+            # self.get_logger().info(f" |  졸음 상태 '{state}' \n Firebase에 업로드 완료 \n 사용자 : {self.current_email})  |")
+            # self.get_logger().info(' └─────────────────────────────────────────────────────────────────────────┘')
             self.get_logger().info(' ┌─────────────────────────────────────────────────────────────────────────┐')
-            self.get_logger().info(f"|  졸음 상태 '{state}' \n Firebase에 업로드 완료 \n 사용자 : {self.current_email})  |")
+            self.get_logger().info(f" |  졸음 상태 '{state}' ")
             self.get_logger().info(' └─────────────────────────────────────────────────────────────────────────┘')
 
         except Exception as e:

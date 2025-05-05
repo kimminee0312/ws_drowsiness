@@ -53,7 +53,7 @@ class FaceDetectorNode(Node):
         self.authenticated = msg.data
         if self.authenticated:
             self.get_logger().info(' ┌────────────────────────────────────────────────────────────────────┐')
-            self.get_logger().info(' |                               얼굴 인증 성공                          |')
+            self.get_logger().info(' |                               얼굴 인증 성공                       |')
             self.get_logger().info(' └────────────────────────────────────────────────────────────────────┘')
         else:
             self.get_logger().info(' ┌────────────────────────────────────────────────────────────────────┐')
@@ -64,7 +64,7 @@ class FaceDetectorNode(Node):
         if msg.data.startswith("[drowsy]"):
             self.active = True
             self.get_logger().info(' ┌────────────────────────────────────────────────────────────────────┐')
-            self.get_logger().info(' |                         [drowsy] email 수신                         |')
+            self.get_logger().info(' |                         [drowsy] email 수신                        |')
             self.get_logger().info(' └────────────────────────────────────────────────────────────────────┘')
 
         else:
