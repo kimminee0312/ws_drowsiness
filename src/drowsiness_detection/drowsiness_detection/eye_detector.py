@@ -61,13 +61,13 @@ class EyeDetector:
 
     def calibrate_eyes(self, ear_avg):
         self.ear_values.append(ear_avg)
-        
+
         if len(self.ear_values) < self.calibration_frames:
             return None
 
         if not self.eye_calibrated:
             sorted_ear = sorted(self.ear_values)
-            upper_40_50 = sorted_ear[int(len(sorted_ear)*0.4):int(len(sorted_ear)*0.5)]
+            upper_40_50 = sorted_ear[int(len(sorted_ear)*0.5):int(len(sorted_ear)*0.6)]
             self.eye_threshold = np.mean(upper_40_50)
             self.eye_calibrated = True
             self.logger.info(' ┌─────────────────────────────────────────────────────────────────────────────┐')

@@ -49,6 +49,10 @@ class DrowsinessDetectionNode(Node):
         # 타이머 초기화
         self.mouth_done_time = None
 
+        # 눈 슬라이딩 윈도우 적용 파라미터 
+        self.ear_history = []
+        self.ear_window_size = 20
+
         self.get_logger().info(' ┌────────────────────────────────────────────┐')
         self.get_logger().info(' |       Drowsiness Detection Node Start      |')
         self.get_logger().info(' └────────────────────────────────────────────┘')
@@ -57,13 +61,15 @@ class DrowsinessDetectionNode(Node):
     # 1) 캘리브레이션 함수 
     # -----------------------------
     def is_calibrating(self, ear_avg):
-
+        if self.yawn_status == "Recalibrating...":
+            self.publisher.publish(String(data="Mouth Calibrating..."))
+            return True
 
         # 입 캘리브레이션 중
         if self.yawn_status =="Mouth Calibrating..." and not self.mouth_calibrated:
-            self.publisher.publish(String(data="Mouth Calibrating..."))
+            self.publisher.publish(String(data="Mouth Recalibrating..."))
             return True
-        
+
         # 입 캘리브레이션 완료 후 상태 변경
         if self.yawn_status == "Mouth Calibration Complete" and not self.mouth_calibrated:
             self.mouth_calibrated = True
@@ -85,21 +91,23 @@ class DrowsinessDetectionNode(Node):
                 self.get_logger().info(' |            Eyes Calibration start          |')
                 self.get_logger().info(' └────────────────────────────────────────────┘')
         
-        eye_threshold = self.eye_detector.calibrate_eyes(ear_avg)
+        # 눈 캘리브레이션 수행은 반드시 위 조건이 끝난 뒤에 시작
+        if self.mouth_calibrated and self.calibration_sleep_done:
+            eye_threshold = self.eye_detector.calibrate_eyes(ear_avg)
 
-        # 슬립 타입 완료 후 입 캘리브레이션 시작
-        if  eye_threshold is None and self.calibration_sleep_done == True:
-            self.publisher.publish(String(data="Eyes Calibrating..."))
-            return True
+            # 슬립 타입 완료 후 입 캘리브레이션 시작
+            if  eye_threshold is None:
+                self.publisher.publish(String(data="Eyes Calibrating..."))
+                return True
 
-        # 입 캘리브레이션 완료 후 상태 변경 
-        if not self.eye_calibration_started:
-            self.eye_calibration_started = True
-            self.get_logger().info(' ┌────────────────────────────────────────────┐')
-            self.get_logger().info(' |         Eyes Calibration Complete          |')
-            self.get_logger().info(' └────────────────────────────────────────────┘')
-            self.publisher.publish(String(data="Eyes Calibration Complete"))
-            return False
+            # 입 캘리브레이션 완료 후 상태 변경 
+            if not self.eye_calibration_started:
+                self.eye_calibration_started = True
+                self.get_logger().info(' ┌────────────────────────────────────────────┐')
+                self.get_logger().info(' |         Eyes Calibration Complete          |')
+                self.get_logger().info(' └────────────────────────────────────────────┘')
+                self.publisher.publish(String(data="Eyes Calibration Complete"))
+                return False
         return False
         
     # -----------------------------
@@ -107,10 +115,17 @@ class DrowsinessDetectionNode(Node):
     # -----------------------------
     def check_eyes_closed(self, ear_avg):
         """
-        EAR < eye_threshold 상태가 2초 이상 유지되면 True 반환
+        슬라이딩 윈도우 평균 적용 후 EAR < eye_threshold 상태가 2초 이상 유지되면 True 반환
         그렇지 않으면 False`
         """
-        if ear_avg < self.eye_detector.eye_threshold:
+
+        self.ear_history.append(ear_avg)
+        if len(self.ear_history) > self.ear_window_size:
+            self.ear_history.pop(0)
+
+        smoothed_ear = np.mean(self.ear_history)
+
+        if smoothed_ear < self.eye_detector.eye_threshold:
             if self.eye_closed_start_time is None :
                 self.eye_closed_start_time = time.time()
             else:
