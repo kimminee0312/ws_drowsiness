@@ -5,7 +5,7 @@ import plotly.graph_objects as go
 
 
 class EyeDetector:
-    def __init__(self, logger, calibration_frames=200, k_eye=0.7):
+    def __init__(self, logger, calibration_frames=180, k_eye=0.7):
         self.logger = logger
         self.calibration_frames = calibration_frames
         self.k_eye = k_eye
@@ -14,6 +14,9 @@ class EyeDetector:
         self.baseline_ear = 0
         self.eye_threshold = 0
 
+    # -----------------------------
+    #  시각화 함수 
+    # -----------------------------
     def plot_ear_calibration(self, ear_values, baseline_ear, threshold):
         x_vals = list(range(len(ear_values)))
 
