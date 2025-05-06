@@ -5,52 +5,13 @@ import plotly.graph_objects as go
 
 
 class EyeDetector:
-    def __init__(self, logger, calibration_frames=180, k_eye=0.7):
+    def __init__(self, logger, calibration_frames=180 ):
         self.logger = logger
         self.calibration_frames = calibration_frames
-        self.k_eye = k_eye
         self.ear_values = []
         self.eye_calibrated = False
         self.baseline_ear = 0
         self.eye_threshold = 0
-
-    # -----------------------------
-    #  시각화 함수 
-    # -----------------------------
-    def plot_ear_calibration(self, ear_values, baseline_ear, threshold):
-        x_vals = list(range(len(ear_values)))
-
-        fig = go.Figure()
-
-        # EAR 값들 (초록)
-        fig.add_trace(go.Scatter(
-            x=x_vals, y=ear_values, mode='markers', name='EAR 값',
-            marker=dict(color='lime', size=6)
-        ))
-
-        # Baseline EAR (파랑)
-        fig.add_trace(go.Scatter(
-            x=x_vals, y=[baseline_ear]*len(ear_values),
-            mode='lines+markers', name='Baseline EAR',
-            marker=dict(color='blue', size=5), line=dict(dash='dash')
-        ))
-
-        # Threshold (빨강)
-        fig.add_trace(go.Scatter(
-            x=x_vals, y=[threshold]*len(ear_values),
-            mode='lines+markers', name='Threshold',
-            marker=dict(color='red', size=5), line=dict(dash='dot')
-        ))
-
-        fig.update_layout(
-            title='EAR Calibration Visualization',
-            xaxis_title='Frame Index',
-            yaxis_title='EAR Value',
-            template='plotly_white',
-            height=500
-        )
-
-        fig.show()
 
     def detect(self, landmarks):
         def compute_EAR(eye):
@@ -67,26 +28,52 @@ class EyeDetector:
         ear_avg = (left_EAR + right_EAR) / 2.0
         return ear_avg
 
+    # -----------------------------
+    #  시각화 함수
+    # -----------------------------
+    def plot_ear_threshold_graph(self):
+        x_vals = list(range(len(self.ear_values)))
+
+        fig = go.Figure()
+
+        # EAR 값들 (초록색 점)
+        fig.add_trace(go.Scatter(
+            x=x_vals, y=self.ear_values, mode='markers', name='EAR 값',
+            marker=dict(color='green', size=6)
+        ))
+
+        # Threshold 값 (빨간 수평선)
+        fig.add_trace(go.Scatter(
+            x=x_vals, y=[self.eye_threshold] * len(self.ear_values),
+            mode='lines', name='Threshold',
+            line=dict(color='red', dash='dash')
+        ))
+
+        fig.update_layout(
+            title='EAR Calibration 결과 시각화',
+            xaxis_title='프레임 인덱스',
+            yaxis_title='EAR 값',
+            template='plotly_white',
+            height=500
+        )
+
+        fig.show()
+
     def calibrate_eyes(self, ear_avg):
+        self.ear_values.append(ear_avg)
+        
         if len(self.ear_values) < self.calibration_frames:
-            self.ear_values.append(ear_avg)
-        else:
-            if not self.eye_calibrated:
-                self.baseline_ear = np.mean(self.ear_values)
-                std_ear = np.std(self.ear_values)
-            
-                self.eye_threshold = self.baseline_ear - self.k_eye * std_ear
-                self.eye_calibrated = True
-                self.logger.info(' ┌─────────────────────────────────────────────────────────────────────────────┐')
-                self.logger.info(' |          Eyes Calibration Complete                                          |')
-                self.logger.info(f' |          Baseline EAR: {self.baseline_ear:.3f},EAR Threshold: {self.eye_threshold:.3f}                           |')
-                self.logger.info(' └─────────────────────────────────────────────────────────────────────────────┘')
+            return None
 
-                # 시각화
-                self.plot_ear_calibration(
-                    self.ear_values,
-                    self.baseline_ear,
-                    self.eye_threshold
-                )
+        if not self.eye_calibrated:
+            sorted_ear = sorted(self.ear_values)
+            upper_40_50 = sorted_ear[int(len(sorted_ear)*0.4):int(len(sorted_ear)*0.5)]
+            self.eye_threshold = np.mean(upper_40_50)
+            self.eye_calibrated = True
+            self.logger.info(' ┌─────────────────────────────────────────────────────────────────────────────┐')
+            self.logger.info(' |          Eyes Calibration Complete                                          |')
+            self.logger.info(f' |          EAR Threshold: {self.eye_threshold:.3f}                                    |')
+            self.logger.info(' └─────────────────────────────────────────────────────────────────────────────┘')
 
-        return self.baseline_ear, self.eye_threshold
+            self.plot_ear_threshold_graph()
+        return self.eye_threshold

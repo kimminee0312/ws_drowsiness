@@ -25,6 +25,12 @@ class YawnDetectionNode(Node):
             '/face/landmarks', 
             self.yawn_detection_callback, 
             10)
+        self.subscription = self.create_subscription(
+            String, 
+            '/drowsiness/status', 
+            self.drowsiness_status_callback,
+            10)
+
         self.publisher = self.create_publisher(
             String, 
             '/yawn/status', 
@@ -35,6 +41,13 @@ class YawnDetectionNode(Node):
         self.get_logger().info(' ┌───────────────────────────────────────────────┐')
         self.get_logger().info(' |            Yawn Detection Node Start          |')
         self.get_logger().info(' └───────────────────────────────────────────────┘')
+
+    # -----------------------------
+    #  하품 상태 감지 콜백
+    # -----------------------------
+    def drowsiness_status_callback(self, msg):
+        self.drowsiness_status = msg.data 
+        self.yawn_detector.drowsiness_status = msg.data 
 
     def yawn_detection_callback(self, msg):
         landmarks = np.array(msg.data).reshape(-1, 2)
@@ -84,7 +97,8 @@ class YawnDetector:
         self.yawn_count = 0
         self.yawn_sessions = []
 
-        self.status = "Calibrating..."
+        self.status = "Mouth Calibrating..."
+        self.drowsiness_status = None
 
     def detect(self, landmarks):
         A = dist.euclidean(landmarks[50], landmarks[58]) 
@@ -125,7 +139,7 @@ class YawnDetector:
                     self.reset_calibration()
                 else:
                     self.calibrated = True
-                    self.status = "Normal"
+                    self.status = "Mouth Calibration Complete"
                     self.logger.info(' ┌─────────────────────────────────────────────────────────────────────────────┐')
                     self.logger.info(' |          Mouth Calibration Complete                                         |')
                     self.logger.info(f' |          Mean: {self.baseline_mean:.3f}, Std: {self.baseline_std:.3f}, Threshold: {self.threshold:.3f}                          |')
@@ -151,7 +165,10 @@ class YawnDetector:
             return
         
         # 하품 여부 판단
-        if self.status == "Normal":
+        if self.status == "Mouth Calibration Complete" and self.drowsiness_status =="Normal":
+            self.status = "Normal"
+
+        elif self.status == "Normal":
             if mar_avg_values >= self.threshold:
                 self.status = "Yawn candidate" 
                 self.candidate_start_time = current_time
