@@ -31,19 +31,20 @@ class AlertNode(Node):
         self.get_logger().info(' └────────────────────────────────────────────┘')
 
     def yawn_callback(self, msg):
-        if msg.data.startswith("Calibrating...") or msg.data.startswith("Recalibrating..."):
+        if msg.data.startswith("Yawning"):
             alert_msg = String()
-            alert_msg.data = "입 캘리브레이션 중입니다"
-            self.publisher.publish(alert_msg)
-        elif msg.data.startswith("Yawning"):
-            alert_msg = String()
-            alert_msg.data = "하품 감지 - 가벼운 스트레칭을 해보세요"
+            alert_msg.data = "하품 감지 : 가벼운 스트레칭을 해보세요"
             self.publisher.publish(alert_msg)
 
     def drowsiness_callback(self, msg):
-        if msg.data.startswith("눈 감김"):
+        if msg.data.startswith("Mouth Calibrating...") or msg.data.startswith("Recalibrating..."):
             alert_msg = String()
-            alert_msg.data = "졸음 감지 - 정면을 주시해 주세요"
+            alert_msg.data = "캘리브레이션 중입니다"
+            self.publisher.publish(alert_msg)
+
+        elif msg.data.startswith("눈 감김"):
+            alert_msg = String()
+            alert_msg.data = "정면을 주시해 주세요"
             self.publisher.publish(alert_msg)
 
         elif msg.data.startswith("Normal"):

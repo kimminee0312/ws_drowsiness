@@ -3,7 +3,8 @@ import rclpy
 from rclpy.node import Node
 from std_msgs.msg import Float32MultiArray, String, Float32
 import numpy as np
-
+from visualization_msgs.msg import Marker
+from geometry_msgs.msg import Point
 from .eye_detector import EyeDetector
 from .nodding_detector import NoddingDetector
 
@@ -32,6 +33,12 @@ class DrowsinessDetectionNode(Node):
             '/debug/ear/status', 
             10)
         
+        self.eye_marker_pub = self.create_publisher(
+            Marker, 
+            '/debug/eye_landmarks', 
+            10)
+
+        
         self.eye_detector = EyeDetector(self.get_logger())
         self.nodding_detector = NoddingDetector()
 
@@ -57,17 +64,42 @@ class DrowsinessDetectionNode(Node):
         self.get_logger().info(' |       Drowsiness Detection Node Start      |')
         self.get_logger().info(' └────────────────────────────────────────────┘')
 
+    def publish_eye_markers(self, landmarks):
+        marker = Marker()
+        marker.header.frame_id = "map"  # TF 프레임 (카메라 기준이면 camera_link도 가능)
+        marker.header.stamp = self.get_clock().now().to_msg()
+        marker.ns = "eye_landmarks"
+        marker.id = 0
+        marker.type = Marker.SPHERE_LIST
+        marker.action = Marker.ADD
+        marker.scale.x = 0.04
+        marker.scale.y = 0.04
+        marker.scale.z = 0.04
+        marker.color.r = 0.5
+        marker.color.g = 0.7
+        marker.color.b = 0.3
+        marker.color.a = 1.0
+
+        for i in list(range(36, 48)):  # 왼쪽, 오른쪽 눈 총 12점
+            pt = Point()
+            pt.x = float(landmarks[i][0]) / 100.0  # 픽셀 → 미터 단위 스케일 조정
+            pt.y = float(landmarks[i][1]) / 100.0
+            pt.z = 0.0
+            marker.points.append(pt)
+
+        self.eye_marker_pub.publish(marker)
+
     # -----------------------------
     # 1) 캘리브레이션 함수 
     # -----------------------------
     def is_calibrating(self, ear_avg):
         if self.yawn_status == "Recalibrating...":
-            self.publisher.publish(String(data="Mouth Calibrating..."))
+            self.publisher.publish(String(data="Mouth Recalibrating..."))
             return True
 
         # 입 캘리브레이션 중
         if self.yawn_status =="Mouth Calibrating..." and not self.mouth_calibrated:
-            self.publisher.publish(String(data="Mouth Recalibrating..."))
+            self.publisher.publish(String(data="Mouth Calibrating..."))
             return True
 
         # 입 캘리브레이션 완료 후 상태 변경
@@ -125,6 +157,10 @@ class DrowsinessDetectionNode(Node):
 
         smoothed_ear = np.mean(self.ear_history)
 
+        # 아직 캘리브레이션 안 된 상태
+        if self.eye_detector.eye_threshold is None:
+            return False
+
         if smoothed_ear < self.eye_detector.eye_threshold:
             if self.eye_closed_start_time is None :
                 self.eye_closed_start_time = time.time()
@@ -173,6 +209,7 @@ class DrowsinessDetectionNode(Node):
     # -----------------------------
     def drowsiness_detection_callback(self, msg):
         landmarks = np.array(msg.data).reshape(-1, 2)
+        self.publish_eye_markers(landmarks)
 
         ear_avg = self.eye_detector.detect(landmarks)
         # For rqt_graph visualization
