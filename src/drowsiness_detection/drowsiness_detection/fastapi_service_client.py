@@ -5,8 +5,9 @@ from pydantic import BaseModel
 import rclpy
 from rclpy.node import Node
 import threading
-from srv_interfaces.srv import Email
-
+from srv_interfaces.srv import Uid
+from rclpy.executors import MultiThreadedExecutor
+from time import sleep
 
 app = FastAPI()
 rclpy.init()
@@ -17,27 +18,26 @@ rclpy.init()
 class FastAPIClientNode(Node):
     def __init__(self):
         super().__init__('fastapi_service_client')
-        # 서비스 클라이언트들을 딕셔너리로 관리
-        self._clients = {
-            'face_register_service' : self.create_client(Email, 'face_register_service'),
-            'start_drowsiness_service' : self.create_client(Email,'start_drowsiness_service'),
+
+        # 변수명 변경
+        self.service_clients = {
+            'face_register_service': self.create_client(Uid, 'face_register_service'),
+            'start_drowsiness_service': self.create_client(Uid, 'start_drowsiness_service'),
         }
 
-        for name, client in self._clients.items():
-            while not client.wait_for_service(timeout_sec=1.0):
-                self.get_logger().info(f"─────────────────────── 서비스 '{name}' 대기 중... ───────────────────────")
-
-    def call_service(self, service_name: str, email: str):
-        if service_name not in self._clients:
-            self.get_logger().error(f" ──────────────────────── 존재하지 않는 서비스 요청: {service_name} ───────────────────────")
+    def call_service(self, service_name: str, uid: str):
+        if service_name not in self.service_clients:
+            self.get_logger().error(f"[!] Unknown service: {service_name}")
             return None
-        
-        clients = self._clients[service_name]
-        req = Email.Request()
-        req.email = email 
 
-        future = clients.call_async(req)
-        rclpy.spin_until_future_complete(self, future)
+        client = self.service_clients[service_name]
+        req = Uid.Request()
+        req.uid = uid
+        future = client.call_async(req)
+
+        while not future.done():
+            rclpy.spin_once(self, timeout_sec=0.1)
+            sleep(0.1)
         return future.result()
 
 # =====================================
@@ -46,16 +46,19 @@ class FastAPIClientNode(Node):
 node = FastAPIClientNode()
 threading.Thread(target=rclpy.spin, args=(node,), daemon=True).start()
 
+executor = MultiThreadedExecutor()
+executor.add_node(node)
+threading.Thread(target=executor.spin, daemon=True).start()
 # FastAPI 모델
-class EmailModel(BaseModel):
-    email: str
+class UidModel(BaseModel):
+    uid: str
 
 @app.post("/face_register")
-def face_register(data: EmailModel):
-    response = node.call_service("face_register_service", data.email)
+def face_register(data: UidModel):
+    response = node.call_service("face_register_service", data.uid)
     return {"status": "face_register sent", "ros_response": str(response)}
 
 @app.post("/start_drowsiness")
-def start_drowsiness(data: EmailModel):
-    response = node.call_service("start_drowsiness_service", data.email)
+def start_drowsiness(data: UidModel):
+    response = node.call_service("start_drowsiness_service", data.uid)
     return {"status": "start_drowsiness sent", "ros_response": str(response)}

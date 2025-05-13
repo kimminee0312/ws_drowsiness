@@ -29,7 +29,7 @@ setup(
     entry_points={
         'console_scripts': [
             'test_email_publisher = drowsiness_detection.test_email_publisher:main',
-            'multi_email_service_server_node = drowsiness_detection.multi_email_service_server_node:main',
+            'multi_uid_service_server_node = drowsiness_detection.multi_uid_service_server_node:main',
             'usb_camera_node = drowsiness_detection.usb_camera_node:main',
             'face_detection_node = drowsiness_detection.face_detection_node:main',
             'yawn_detection_node = drowsiness_detection.yawn_detection_node:main',

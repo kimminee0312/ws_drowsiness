@@ -20,14 +20,14 @@ class FirebaseBridgeNode(Node):
         self.db = firestore.client()
 
         # 현재 이메일을 저장하는 변수
-        self.current_email = None
+        self.current_uid = None
         self.active = False
         self.prev_drowsiness_status = None  
         self.prev_yawn_status = None
 
-        self.subscription_email = self.create_subscription(
+        self.subscription_uid = self.create_subscription(
             String,
-            '/current_email',
+            '/current_uid',
             self.email_callback,
             10
         )
@@ -54,17 +54,17 @@ class FirebaseBridgeNode(Node):
         #  prefix 파싱
         if raw_email.startswith("[drowsy]"):
             self.active = True
-            self.current_email = raw_email.replace("[drowsy]", "")
+            self.current_uid = raw_email.replace("[drowsy]", "")
         
         else:
             self.active = False
-            self.current_email = None
+            self.current_uid = None
             self.get_logger().info(' ┌────────────────────────────────────────────────────────────────┐')
             self.get_logger().info(' |            [drowsy] prefix 없음 → Firebase upload 비활성화        |')
             self.get_logger().info(' └────────────────────────────────────────────────────────────────┘')
 
     def yawn_status_callback(self, msg):
-        if not self.active or not self.current_email:
+        if not self.active or not self.current_uid:
             self.get_logger().warn("───────────────────────────── 이메일 정보 없음 -> 상태 저장 건너뜀 ─────────────────────────────")
             return
         
@@ -78,11 +78,11 @@ class FirebaseBridgeNode(Node):
         self.prev_yawn_status = state 
 
         try:
-            self.db.collection('users').document(self.current_email).set({
+            self.db.collection('users').document(self.current_uid).set({
                 'yawn status': state
             }, merge=True)
             # self.get_logger().info(' ┌─────────────────────────────────────────────────────────────────────────┐')
-            # self.get_logger().info(f" |  하품 상태 '{state}' \n Firebase에 업로드 완료 \n 사용자 : {self.current_email})  |")
+            # self.get_logger().info(f" |  하품 상태 '{state}' \n Firebase에 업로드 완료 \n 사용자 : {self.current_uid})  |")
             # self.get_logger().info(' └─────────────────────────────────────────────────────────────────────────┘')
             self.get_logger().info(' ┌─────────────────────────────────────────────────────────────────────────┐')
             self.get_logger().info(f" |  하품 상태 '{state}' ")
@@ -92,7 +92,7 @@ class FirebaseBridgeNode(Node):
             self.get_logger().error(f"───────────────────────────── Firebase 업로드 실패: {e} ─────────────────────────────")
            
     def drowsiness_status_callback(self, msg):
-        if not self.active or not self.current_email:
+        if not self.active or not self.current_uid:
             self.get_logger().warn("───────────────────────────── 이메일 정보 없음 -> 상태 저장 건너뜀 ─────────────────────────────")
             return
 
@@ -106,11 +106,11 @@ class FirebaseBridgeNode(Node):
         self.prev_drowsiness_status = state 
         
         try:
-            self.db.collection('users').document(self.current_email).set({
+            self.db.collection('users').document(self.current_uid).set({
                 'drowsiness status': state
             }, merge=True)
             # self.get_logger().info(' ┌─────────────────────────────────────────────────────────────────────────┐')
-            # self.get_logger().info(f" |  졸음 상태 '{state}' \n Firebase에 업로드 완료 \n 사용자 : {self.current_email})  |")
+            # self.get_logger().info(f" |  졸음 상태 '{state}' \n Firebase에 업로드 완료 \n 사용자 : {self.current_uid})  |")
             # self.get_logger().info(' └─────────────────────────────────────────────────────────────────────────┘')
             self.get_logger().info(' ┌─────────────────────────────────────────────────────────────────────────┐')
             self.get_logger().info(f" |  졸음 상태 '{state}' ")

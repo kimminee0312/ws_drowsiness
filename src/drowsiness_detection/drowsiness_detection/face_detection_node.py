@@ -22,10 +22,10 @@ class FaceDetectorNode(Node):
             self.auth_callback,
             10
         )
-        self.subscription_email = self.create_subscription(
+        self.subscription_uid = self.create_subscription(
             String,
-            '/current_email',
-            self.email_callback,
+            '/current_uid',
+            self.uid_callback,
             10
         )
         self.subscription = self.create_subscription(
@@ -60,11 +60,11 @@ class FaceDetectorNode(Node):
             self.get_logger().info(' |                               얼굴 인증 실패                          |')
             self.get_logger().info(' └────────────────────────────────────────────────────────────────────┘')
 
-    def email_callback(self, msg):
+    def uid_callback(self, msg):
         if msg.data.startswith("[drowsy]"):
             self.active = True
             self.get_logger().info(' ┌────────────────────────────────────────────────────────────────────┐')
-            self.get_logger().info(' |                         [drowsy] email 수신                        |')
+            self.get_logger().info(' |                         [drowsy] uid 수신                        |')
             self.get_logger().info(' └────────────────────────────────────────────────────────────────────┘')
 
         else:

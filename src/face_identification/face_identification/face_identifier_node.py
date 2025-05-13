@@ -26,7 +26,7 @@ class FaceIdentifierNode(Node):
             firebase_admin.initialize_app(cred)
         self.db = firestore.client()
 
-        self.current_email = None
+        self.current_uid = None
         self.target_embedding = None
         self.authenticated = False
 
@@ -34,25 +34,25 @@ class FaceIdentifierNode(Node):
         # self.timer = self.create_timer(1.0, self.publish_authentication_status)
 
 
-        self.create_subscription(String, '/current_email', self.email_callback, 10)
+        self.create_subscription(String, '/current_uid', self.uid_callback, 10)
         self.create_subscription(Image, '/camera/image_raw', self.image_callback, 10)
         self.publisher_ = self.create_publisher(Bool, '/user_authenticated', 10)
 
         self.get_logger().info("🔐 얼굴 인증 노드 실행 중...")
 
-    def email_callback(self, msg):
-        full_email = msg.data.strip()
+    def uid_callback(self, msg):
+        full_uid = msg.data.strip()
 
-        if not full_email.startswith("[drowsy]"):
+        if not full_uid.startswith("[drowsy]"):
             self.get_logger().info("⚠️ [drowsy] prefix 없음 → 무시됨")
             return
 
-        self.current_email = full_email.replace("[drowsy]", "").strip().lower()
-        self.get_logger().info(f"📩 인증용 이메일 수신: {self.current_email}")
+        self.current_uid = full_uid.replace("[drowsy]", "").strip()
+        self.get_logger().info(f"📩 인증용 이메일 수신: {self.current_uid}")
 
         # Firestore에서 해당 사용자의 임베딩 로드
         try:
-            doc = self.db.collection("users").document(self.current_email).collection("face_embedding").document("vector").get()
+            doc = self.db.collection("users").document(self.current_uid).collection("face_embedding").document("vector").get()
             if doc.exists:
                 self.target_embedding = np.array(doc.to_dict()["embedding"])
                 self.authenticated = False

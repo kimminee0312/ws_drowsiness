@@ -1,4 +1,4 @@
-string email
+string uid
 ---
 bool success
 string message

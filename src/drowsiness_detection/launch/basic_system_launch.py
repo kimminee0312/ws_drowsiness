@@ -11,8 +11,8 @@ def generate_launch_description():
         ),
         Node(
             package='drowsiness_detection',
-            executable='multi_email_service_server_node',
-            name='multi_email_service_server_node',
+            executable='multi_uid_service_server_node',
+            name='multi_uid_service_server_node',
             output='screen'
         ),
     ])

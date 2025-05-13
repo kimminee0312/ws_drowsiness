@@ -61,6 +61,19 @@ Visualization Manager:
         Reliability Policy: Reliable
         Value: /camera/image_raw
       Value: true
+    - Class: rviz_default_plugins/Marker
+      Enabled: true
+      Name: Marker
+      Namespaces:
+        eye_landmarks: true
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        Filter size: 10
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /debug/eye_landmarks
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48

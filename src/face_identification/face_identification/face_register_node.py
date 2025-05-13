@@ -27,32 +27,32 @@ class FaceRegisterNode(Node):
             firebase_admin.initialize_app(cred)
         self.db = firestore.client()
 
-        self.current_email = None
+        self.current_uid = None
         self.embedding_registered = False
 
         # ROS 토픽 구독
-        self.create_subscription(String, '/current_email', self.email_callback, 10)
+        self.create_subscription(String, '/current_uid', self.uid_callback, 10)
         self.create_subscription(Image, '/camera/image_raw', self.image_callback, 10)
 
         self.get_logger().info("📸 얼굴 등록 노드 실행 중...")
 
-    def email_callback(self, msg):
-        full_email = msg.data.strip()
+    def uid_callback(self, msg):
+        full_uid = msg.data.strip()
         
-        if not full_email.startswith("[face_register]"):
+        if not full_uid.startswith("[face_register]"):
             self.get_logger().info("⚠️ [face_register] prefix 없음 → 무시됨")
             return
         
-        email = full_email.replace("[face_register]", "").strip().lower()
+        uid = full_uid.replace("[face_register]", "").strip()
 
-        if email != self.current_email:
-            self.current_email = email
+        if uid != self.current_uid:
+            self.current_uid = uid
             self.embedding_registered = False  # 새로운 이메일일 때만 초기화
 
-        self.get_logger().info(f"📩 얼굴 등록용 이메일 수신됨: {self.current_email}")
+        self.get_logger().info(f"📩 얼굴 등록용 이메일 수신됨: {self.current_uid}")
 
     def image_callback(self, msg):
-        if not self.current_email or self.embedding_registered:
+        if not self.current_uid or self.embedding_registered:
             return
 
         frame = self.bridge.imgmsg_to_cv2(msg, desired_encoding='bgr8')
@@ -70,13 +70,13 @@ class FaceRegisterNode(Node):
                     continue
 
                 emb = self.embedder.embeddings([face_img])[0].tolist()
-                self.save_embedding_to_firebase(self.current_email, emb)
+                self.save_embedding_to_firebase(self.current_uid, emb)
                 self.embedding_registered = True
-                self.get_logger().info(f"✅ 얼굴 임베딩 저장 완료: {self.current_email}")
+                self.get_logger().info(f"✅ 얼굴 임베딩 저장 완료: {self.current_uid}")
                 return
 
-    def save_embedding_to_firebase(self, email, embedding):
-        ref = self.db.collection("users").document(email)
+    def save_embedding_to_firebase(self, uid, embedding):
+        ref = self.db.collection("users").document(uid)
         ref.set({"face_id_registered": True}, merge=True)
         ref.collection("face_embedding").document("vector").set({
             "embedding": embedding,

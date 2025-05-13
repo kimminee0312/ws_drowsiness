@@ -13,8 +13,8 @@ class UsbCameraNode(Node):
         self.cap = cv2.VideoCapture(0)
 
         # 카메라 설정 (해상도와 FPS 강제 설정)
-        self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)  # 필요 시 해상도 조절
-        self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+        self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)  # 필요 시 해상도 조절
+        self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
         self.cap.set(cv2.CAP_PROP_FPS, 30)  # 30FPS로 설정
 
         actual_fps = self.cap.get(cv2.CAP_PROP_FPS)

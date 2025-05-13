@@ -8,7 +8,7 @@ find_package(builtin_interfaces REQUIRED)
 
 # ✅ 여기가 중요: Python 바인딩을 생성하려면 해당 옵션 추가
 rosidl_generate_interfaces(${PROJECT_NAME}
-  "srv/Email.srv"
+  "srv/Uid.srv"
   DEPENDENCIES builtin_interfaces
 )
 
