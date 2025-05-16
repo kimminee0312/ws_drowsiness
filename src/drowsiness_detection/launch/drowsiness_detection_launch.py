@@ -23,6 +23,12 @@ def generate_launch_description():
         ),
         Node(
             package='drowsiness_detection',
+            executable='eye_detection_node',
+            name='eye_detection_node',
+            output='screen'
+        ),
+        Node(
+            package='drowsiness_detection',
             executable='drowsiness_detection_node',
             name='drowsiness_detection_node',
             output='screen'

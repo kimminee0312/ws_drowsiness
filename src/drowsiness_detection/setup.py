@@ -28,11 +28,12 @@ setup(
     license='TODO: License declaration',
     entry_points={
         'console_scripts': [
-            'test_email_publisher = drowsiness_detection.test_email_publisher:main',
+            'test_uid_publisher = drowsiness_detection.test_uid_publisher:main',
             'multi_uid_service_server_node = drowsiness_detection.multi_uid_service_server_node:main',
             'usb_camera_node = drowsiness_detection.usb_camera_node:main',
             'face_detection_node = drowsiness_detection.face_detection_node:main',
             'yawn_detection_node = drowsiness_detection.yawn_detection_node:main',
+            'eye_detection_node = drowsiness_detection.eye_detection_node:main',
             'drowsiness_detection_node = drowsiness_detection.drowsiness_detection_node:main', 
             'alert_node = drowsiness_detection.alert_node:main',
             'status_upload_node = drowsiness_detection.status_upload_node:main',

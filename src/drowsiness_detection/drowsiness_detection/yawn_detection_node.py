@@ -25,11 +25,6 @@ class YawnDetectionNode(Node):
             '/face/landmarks', 
             self.yawn_detection_callback, 
             10)
-        self.subscription = self.create_subscription(
-            String, 
-            '/drowsiness/status', 
-            self.drowsiness_status_callback,
-            10)
 
         self.publisher = self.create_publisher(
             String, 
@@ -41,13 +36,6 @@ class YawnDetectionNode(Node):
         self.get_logger().info(' ┌───────────────────────────────────────────────┐')
         self.get_logger().info(' |            Yawn Detection Node Start          |')
         self.get_logger().info(' └───────────────────────────────────────────────┘')
-
-    # -----------------------------
-    #  하품 상태 감지 콜백
-    # -----------------------------
-    def drowsiness_status_callback(self, msg):
-        self.drowsiness_status = msg.data 
-        self.yawn_detector.drowsiness_status = msg.data 
 
     def yawn_detection_callback(self, msg):
         landmarks = np.array(msg.data).reshape(-1, 2)
@@ -68,7 +56,7 @@ class YawnDetector:
     def __init__(
         self, 
         logger,
-        calibration_frames=300, 
+        calibration_frames=200, 
         k_threshold=3, 
         moving_avg_window=20,
         time_threshold=3,
@@ -98,7 +86,6 @@ class YawnDetector:
         self.yawn_sessions = []
 
         self.status = "Mouth Calibrating..."
-        self.drowsiness_status = None
 
     def detect(self, landmarks):
         A = dist.euclidean(landmarks[50], landmarks[58]) 
@@ -165,7 +152,7 @@ class YawnDetector:
             return
         
         # 하품 여부 판단
-        if self.status == "Mouth Calibration Complete" and self.drowsiness_status =="Normal":
+        if self.status == "Mouth Calibration Complete":
             self.status = "Normal"
 
         elif self.status == "Normal":

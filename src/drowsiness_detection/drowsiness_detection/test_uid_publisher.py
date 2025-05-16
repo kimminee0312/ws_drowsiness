@@ -2,12 +2,12 @@ import rclpy
 from rclpy.node import Node
 from std_msgs.msg import String, Bool
 
-class TestEmailPublisher(Node):
+class TestUidPublisher(Node):
     def __init__(self):
-        super().__init__('test_email_publisher')
+        super().__init__('test_uid_publisher')
 
         # 이메일 발행 퍼블리셔
-        self.email_pub = self.create_publisher(String, '/current_email', 10)
+        self.uid_pub = self.create_publisher(String, '/current_uid', 10)
 
         # 인증 상태 퍼블리셔
         self.auth_pub = self.create_publisher(Bool, '/user_authenticated', 10)
@@ -16,16 +16,16 @@ class TestEmailPublisher(Node):
         self.timer = self.create_timer(2.0, self.timer_callback)
 
         # 고정 이메일 (테스트용)
-        self.test_email = '[drowsy]kimminee9349@gmail.com'
+        self.test_uid = '[drowsy]8YL5MDuor2XiEJKIF61xMApJtEm2'
 
-        self.get_logger().info('✅ TestEmailPublisher Node Started')
+        self.get_logger().info('✅ TestUidPublisher Node Started')
 
     def timer_callback(self):
         # 이메일 메시지 발행
-        email_msg = String()
-        email_msg.data = self.test_email
-        self.email_pub.publish(email_msg)
-        self.get_logger().info(f'📤 Published Email: {email_msg.data}')
+        uid_msg = String()
+        uid_msg.data = self.test_uid
+        self.uid_pub.publish(uid_msg)
+        self.get_logger().info(f'📤 Published Uid: {uid_msg.data}')
 
         # 인증 메시지 발행 (항상 True)
         auth_msg = Bool()
@@ -35,7 +35,7 @@ class TestEmailPublisher(Node):
 
 def main(args=None):
     rclpy.init(args=args)
-    node = TestEmailPublisher()
+    node = TestUidPublisher()
     rclpy.spin(node)
     node.destroy_node()
     rclpy.shutdown()

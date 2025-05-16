@@ -1,11 +1,9 @@
 import time
 import rclpy
 from rclpy.node import Node
-from std_msgs.msg import Float32MultiArray, String, Float32
+from std_msgs.msg import Float32MultiArray, String
 import numpy as np
-from visualization_msgs.msg import Marker
-from geometry_msgs.msg import Point
-from .eye_detector import EyeDetector
+from .eye_detection_node import EyeDetector
 from .nodding_detector import NoddingDetector
 
 class DrowsinessDetectionNode(Node):
@@ -23,174 +21,55 @@ class DrowsinessDetectionNode(Node):
             self.yawn_status_callback, 
             10)
         
+        self.subscription = self.create_subscription(
+            String, 
+            '/eyes/status',
+            self.eyes_status_callback, 
+            10)
+        
         self.publisher = self.create_publisher(
             String, 
             '/drowsiness/status', 
             10)
         
-        self.publisher_ear = self.create_publisher(
-            Float32, 
-            '/debug/ear/status', 
-            10)
-        
-        self.eye_marker_pub = self.create_publisher(
-            Marker, 
-            '/debug/eye_landmarks', 
-            10)
-
-        
-        self.eye_detector = EyeDetector(self.get_logger())
         self.nodding_detector = NoddingDetector()
-
-        self.eye_closed_start_time = None
-        self.eye_closed_duration_threshold = 2.0 
         
         self.yawn_status = None
-
-        # 상태 관리
-        self.mouth_calibrated = False
-        self.eye_calibration_started = False
-        self.calibration_sleep_done = False
-        self.sleep_after_mouth = 3.0  # 3초 대기
-
-        # 타이머 초기화
-        self.mouth_done_time = None
-
-        # 눈 슬라이딩 윈도우 적용 파라미터 
-        self.ear_history = []
-        self.ear_window_size = 20
+        self.eyes_status = None
 
         self.get_logger().info(' ┌────────────────────────────────────────────┐')
         self.get_logger().info(' |       Drowsiness Detection Node Start      |')
         self.get_logger().info(' └────────────────────────────────────────────┘')
 
-    def publish_eye_markers(self, landmarks):
-        marker = Marker()
-        marker.header.frame_id = "map"  # TF 프레임 (카메라 기준이면 camera_link도 가능)
-        marker.header.stamp = self.get_clock().now().to_msg()
-        marker.ns = "eye_landmarks"
-        marker.id = 0
-        marker.type = Marker.SPHERE_LIST
-        marker.action = Marker.ADD
-        marker.scale.x = 0.04
-        marker.scale.y = 0.04
-        marker.scale.z = 0.04
-        marker.color.r = 0.5
-        marker.color.g = 0.7
-        marker.color.b = 0.3
-        marker.color.a = 1.0
-
-        for i in list(range(36, 48)):  # 왼쪽, 오른쪽 눈 총 12점
-            pt = Point()
-            pt.x = float(landmarks[i][0]) / 100.0  # 픽셀 → 미터 단위 스케일 조정
-            pt.y = float(landmarks[i][1]) / 100.0
-            pt.z = 0.0
-            marker.points.append(pt)
-
-        self.eye_marker_pub.publish(marker)
-
     # -----------------------------
-    # 1) 캘리브레이션 함수 
-    # -----------------------------
-    def is_calibrating(self, ear_avg):
-        if self.yawn_status == "Recalibrating...":
-            self.publisher.publish(String(data="Mouth Recalibrating..."))
-            return True
-
-        # 입 캘리브레이션 중
-        if self.yawn_status =="Mouth Calibrating..." and not self.mouth_calibrated:
-            self.publisher.publish(String(data="Mouth Calibrating..."))
-            return True
-
-        # 입 캘리브레이션 완료 후 상태 변경
-        if self.yawn_status == "Mouth Calibration Complete" and not self.mouth_calibrated:
-            self.mouth_calibrated = True
-            self.mouth_done_time = time.time()
-            self.get_logger().info(' ┌────────────────────────────────────────────┐')
-            self.get_logger().info(' |        Mouth Calibration Complete          |')
-            self.get_logger().info(' └────────────────────────────────────────────┘')
-            self.publisher.publish(String(data="Mouth Calibration Complete"))
-            return True
-
-        # 입 캘리브레이션 완료 후 슬립 시간 중
-        if self.mouth_calibrated and not self.calibration_sleep_done:
-            if time.time() - self.mouth_done_time < self.sleep_after_mouth:
-                return True
-            else:
-                # 슬립 시간 완료
-                self.calibration_sleep_done = True
-                self.get_logger().info(' ┌────────────────────────────────────────────┐')
-                self.get_logger().info(' |            Eyes Calibration start          |')
-                self.get_logger().info(' └────────────────────────────────────────────┘')
-        
-        # 눈 캘리브레이션 수행은 반드시 위 조건이 끝난 뒤에 시작
-        if self.mouth_calibrated and self.calibration_sleep_done:
-            eye_threshold = self.eye_detector.calibrate_eyes(ear_avg)
-
-            # 슬립 타입 완료 후 입 캘리브레이션 시작
-            if  eye_threshold is None:
-                self.publisher.publish(String(data="Eyes Calibrating..."))
-                return True
-
-            # 입 캘리브레이션 완료 후 상태 변경 
-            if not self.eye_calibration_started:
-                self.eye_calibration_started = True
-                self.get_logger().info(' ┌────────────────────────────────────────────┐')
-                self.get_logger().info(' |         Eyes Calibration Complete          |')
-                self.get_logger().info(' └────────────────────────────────────────────┘')
-                self.publisher.publish(String(data="Eyes Calibration Complete"))
-                return False
-        return False
-        
-    # -----------------------------
-    # 2) 눈 감김 시간 로직 함수
-    # -----------------------------
-    def check_eyes_closed(self, ear_avg):
-        """
-        슬라이딩 윈도우 평균 적용 후 EAR < eye_threshold 상태가 2초 이상 유지되면 True 반환
-        그렇지 않으면 False`
-        """
-
-        self.ear_history.append(ear_avg)
-        if len(self.ear_history) > self.ear_window_size:
-            self.ear_history.pop(0)
-
-        smoothed_ear = np.mean(self.ear_history)
-
-        # 아직 캘리브레이션 안 된 상태
-        if self.eye_detector.eye_threshold is None:
-            return False
-
-        if smoothed_ear < self.eye_detector.eye_threshold:
-            if self.eye_closed_start_time is None :
-                self.eye_closed_start_time = time.time()
-            else:
-                duration = time.time() - self.eye_closed_start_time
-                if duration >= self.eye_closed_duration_threshold:
-                    return True
-        else:
-            self.eye_closed_start_time = None
-        return False
-    
-    # -----------------------------
-    # 3) 하품 상태 감지 콜백
+    # 1) 하품 상태 감지 콜백
     # -----------------------------
     def yawn_status_callback(self, msg):
         self.yawn_status = msg.data 
 
     # -----------------------------
-    # 4) 졸음 분석 및 점수 부여 알고리즘 
+    # 2) 눈 감김 상태 감지 콜백
     # -----------------------------
-    def analyze_drowsiness(self, eyes_closed_status, nodding_status, yawn_status):
+    def eyes_status_callback(self, msg):
+        self.eyes_status = msg.data         
+
+    # -----------------------------
+    # 3) 졸음 분석 및 점수 부여 알고리즘 
+    # -----------------------------
+    def analyze_drowsiness(self, nodding_status, yawn_status, eyes_status):
         status_parts = []
 
-        if eyes_closed_status:
+        if (yawn_status in ["Mouth Calibrating...", "Recalibrating..."] or
+            eyes_status == "Eyes Calibrating..."):
+            return "Calibrating Now"
+
+        if eyes_status == "CLOSED":
             status_parts.append("눈 감김")
 
-        if nodding_status == "Nodding" and eyes_closed_status:
+        if nodding_status == "Nodding" and eyes_status == "CLOSED":
             status_parts.append("앞으로 끄덕임")
 
-        if nodding_status == "Nodding_Side" and eyes_closed_status:
+        if nodding_status == "Nodding_Side" and eyes_status == "CLOSED":
             status_parts.append("옆으로 끄덕임")
 
         if yawn_status == "Yawn candidate":
@@ -205,29 +84,16 @@ class DrowsinessDetectionNode(Node):
             return " / ".join(status_parts)
 
     # -----------------------------
-    # 5) 메인 콜백
+    # 4) 메인 콜백
     # -----------------------------
     def drowsiness_detection_callback(self, msg):
         landmarks = np.array(msg.data).reshape(-1, 2)
-        self.publish_eye_markers(landmarks)
 
-        ear_avg = self.eye_detector.detect(landmarks)
-        # For rqt_graph visualization
-        self.publisher_ear.publish(Float32(data=ear_avg))
-
-        if self.is_calibrating(ear_avg):
-            return
-        
-        eyes_closed_status = self.check_eyes_closed(ear_avg)
         nodding_status = self.nodding_detector.detect(landmarks)
         yawn_status = self.yawn_status
+        eyes_status = self.eyes_status
 
-        # self.get_logger().info(f"[EAR avg]: {ear_avg:.3f}, Threshold: {self.eye_detector.eye_threshold:.3f}")
-        # self.get_logger().info(f"[눈 감김 판단]: {eyes_closed_status}")
-        # self.get_logger().info(f"[끄덕임 판단]: {nodding_status}")
-        # self.get_logger().info(f"[하품 상태]: {yawn_status}")
-
-        status = self.analyze_drowsiness(eyes_closed_status, nodding_status, yawn_status)
+        status = self.analyze_drowsiness(nodding_status, yawn_status, eyes_status)
         self.publisher.publish(String(data=status))
 
 def main(args=None):
