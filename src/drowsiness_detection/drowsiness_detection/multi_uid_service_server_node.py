@@ -1,5 +1,7 @@
-# email_service_server.py
-# ROS 2 서비스 서버: 이메일 요청 받으면 /current_uid 토픽 발행
+"""
+email_service_server.py
+ROS 2 서비스 서버: 이메일 요청 받으면 /current_uid 토픽 발행
+"""
 
 import rclpy
 from rclpy.node import Node

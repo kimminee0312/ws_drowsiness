@@ -28,6 +28,8 @@ setup(
     license='TODO: License declaration',
     entry_points={
         'console_scripts': [
+            'ear_logger_node = drowsiness_detection.ear_logger_node:main',
+            'publish_labels_from_csv = drowsiness_detection.publish_labels_from_csv:main',
             'test_uid_publisher = drowsiness_detection.test_uid_publisher:main',
             'multi_uid_service_server_node = drowsiness_detection.multi_uid_service_server_node:main',
             'usb_camera_node = drowsiness_detection.usb_camera_node:main',

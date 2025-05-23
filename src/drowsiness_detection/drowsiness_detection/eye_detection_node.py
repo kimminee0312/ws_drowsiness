@@ -15,7 +15,13 @@ class EyeDetectionNode(Node):
         self.subscription = self.create_subscription(
             Float32MultiArray, 
             '/face/landmarks', 
-            self.eye_detection_callback, 
+            self.raw_eye_detection_callback, 
+            10)
+        
+        self.subscription_kal = self.create_subscription(
+            Float32MultiArray, 
+            '/face/landmarks_kal', 
+            self.kal_eye_detection_callback, 
             10)
 
         self.pub_eyes_status = self.create_publisher(
@@ -28,37 +34,63 @@ class EyeDetectionNode(Node):
             '/debug/eye_landmarks', 
             10)
         
-        self.pub_debug_ear = self.create_publisher(
+        self.pub_debug_ear_raw = self.create_publisher(
             Float32, 
-            '/debug/ear/status', 
+            '/debug/ear/raw', 
             10)
         
+        self.pub_debug_ear_kal = self.create_publisher(
+            Float32, 
+            '/debug/ear/kal', 
+            10)
+
         self.eye_detector = EyeDetector(self.get_logger())
+
+        self.landmarks_raw = None
+        self.landmarks_kalman = None
 
         self.get_logger().info(' ┌───────────────────────────────────────────────┐')
         self.get_logger().info(' |            Eye Detection Node Start           |')
         self.get_logger().info(' └───────────────────────────────────────────────┘')
 
-    def eye_detection_callback(self, msg):
-        landmarks = np.array(msg.data).reshape(-1,2)
+    def raw_eye_detection_callback(self, msg):
+        self.landmarks_raw = np.array(msg.data).reshape(-1, 2)
+        self.try_process()
+
+    def kal_eye_detection_callback(self, msg):
+        self.landmarks_kalman = np.array(msg.data).reshape(-1, 2)
+        self.try_process()
+
+    def try_process(self):
+        if self.landmarks_raw is None or self.landmarks_kalman is None:
+            return
+    
         self.eye_detector.publish_eye_markers(
-            landmarks, self.pub_debug_eye_marker, self.get_clock()
-        )
+            self.landmarks_raw, self.pub_debug_eye_marker, self.get_clock()
+        )        
 
-        ear_avg = self.eye_detector.detect(landmarks)
-        self.pub_debug_ear.publish(Float32(data=ear_avg))
+        ear_raw = self.eye_detector.detect(self.landmarks_raw)
+        ear_kal = self.eye_detector.detect(self.landmarks_kalman)
 
-        # 캘리브레이션
-        self.eye_detector.calibrate_eyes(ear_avg)
+        # 디버깅용 퍼블리시
+        self.pub_debug_ear_raw.publish(Float32(data=ear_raw)) 
+        self.pub_debug_ear_kal.publish(Float32(data=ear_kal)) 
+
+        # 캘리브레이션은 raw로 진행
+        self.eye_detector.calibrate_eyes(ear_raw) 
 
         # 캘리브레이션 완료 시 하품 감지
         if not self.eye_detector.eye_calibrated:
             status = "Eyes Calibrating..."
         else:
-            self.eye_detector.update_eye_state(ear_avg)
+            self.eye_detector.update_eye_state(ear_kal) # 상태는 보정된 기준으로
             status = self.eye_detector.eye_state
 
         self.pub_eyes_status.publish(String(data=status))
+
+        # reset
+        self.landmarks_raw = None
+        self.landmarks_kalman = None
 
 class EyeDetector:
     def __init__(self, logger, calibration_frames=150, margin_ratio=0.1):
@@ -78,8 +110,8 @@ class EyeDetector:
 
         self.closed_start_time = None
         self.open_start_time = None
-        self.closed_duration_threshold = 2.0
-        self.open_duration_threshold = 1.0
+        self.closed_duration_threshold = 1.0
+        self.open_duration_threshold = 0.3
 
     def publish_eye_markers(self, landmarks, publisher, clock):
         marker = Marker()
@@ -148,8 +180,8 @@ class EyeDetector:
             self.eye_threshold = (self.closed_mean + self.opened_mean) / 2
 
             self.lower_threshold = self.closed_mean * (1 + self.margin_ratio)
-            # self.upper_threshold = self.opened_mean * (1 - self.margin_ratio*5)
-            self.upper_threshold = self.opened_mean - 0.1
+            self.upper_threshold = self.opened_mean * (1 - self.margin_ratio*1.5)
+            # self.upper_threshold = self.opened_mean - 0.1
 
             self.eye_calibrated = True
 

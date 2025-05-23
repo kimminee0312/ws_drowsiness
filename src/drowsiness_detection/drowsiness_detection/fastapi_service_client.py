@@ -1,4 +1,6 @@
-# ✅ FastAPI 서버에서 ROS 2 서비스 호출
+"""
+FastAPI 서버에서 ROS 2 서비스 호출
+"""
 
 from fastapi import FastAPI
 from pydantic import BaseModel

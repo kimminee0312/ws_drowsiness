@@ -1,3 +1,7 @@
+"""
+졸음 인식 알고리즘 수정하고 확인 할 때 앱 연동 하기 귀찮아서 
+자동으로 uid랑 얼굴 식별 확인 결과 토픽 발행 해주는 스크립트 
+"""
 import rclpy
 from rclpy.node import Node
 from std_msgs.msg import String, Bool
