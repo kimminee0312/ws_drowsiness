@@ -14,13 +14,14 @@ build/
 log/
 Test_data/
 bagfile/
-
-# ROS 2 colcon 빌드 관련 폴더 무시
 colcon/
 drowsiness_detection_app/
+performance_evaluation/
 
 src/drowsiness_detection/drowsiness_detection/shape_predictor_68_face_landmarks_GTX.dat
 src/drowsiness_detection/drowsiness_detection/shape_predictor_68_face_landmarks.dat
 
 src/srv_interfaces
+src/dream.rviz
+src/drowsiness_detection/resource/drowsiness_detection
 src/dream.rviz

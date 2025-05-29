@@ -9,7 +9,7 @@ import os
 
 class FirebaseBridgeNode(Node):
     def __init__(self):
-        super().__init__('status_upload_node')
+        super().__init__('status_uploader_node')
 
         # 키 파일 경로
         key_path = os.path.expanduser('~/workspace/ws_drowsiness/firebase-key.json')
@@ -28,7 +28,7 @@ class FirebaseBridgeNode(Node):
         self.subscription_uid = self.create_subscription(
             String,
             '/current_uid',
-            self.email_callback,
+            self.uid_callback,
             10
         )
         self.subscription = self.create_subscription(
@@ -48,7 +48,7 @@ class FirebaseBridgeNode(Node):
         self.get_logger().info(' |             Status Upload Node Started        |')
         self.get_logger().info(' └───────────────────────────────────────────────┘')
 
-    def email_callback(self, msg):
+    def uid_callback(self, msg):
         raw_email = msg.data
 
         #  prefix 파싱

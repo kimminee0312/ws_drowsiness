@@ -35,8 +35,14 @@ def generate_launch_description():
         ),
         Node(
             package='drowsiness_detection',
-            executable='status_upload_node',
-            name='status_upload_node',
+            executable='status_uploader_node',
+            name='status_uploader_node',
+            output='screen'
+        ),
+        Node(
+            package='drowsiness_detection',
+            executable='drowsy_uploader_node',
+            name='drowsy_uploader_node',
             output='screen'
         ),
         Node(

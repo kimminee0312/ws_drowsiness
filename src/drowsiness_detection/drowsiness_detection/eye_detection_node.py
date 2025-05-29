@@ -106,12 +106,14 @@ class EyeDetector:
         self.margin_ratio = margin_ratio
         self.lower_threshold = None
         self.upper_threshold = None
-        self.eye_state = "OPEN" # initial state
+        self.eye_state = "none" # initial state
 
         self.closed_start_time = None
         self.open_start_time = None
+        self.setting_time = None
         self.closed_duration_threshold = 1.0
         self.open_duration_threshold = 0.3
+        self.setting_time_threshold = 0.2
 
     def publish_eye_markers(self, landmarks, publisher, clock):
         marker = Marker()
@@ -200,27 +202,36 @@ class EyeDetector:
     def update_eye_state(self, ear_avg):
         now = time.time()
 
-        if self.eye_state == "OPEN":
+        if self.eye_state == "none":
             if ear_avg < self.lower_threshold:
                 if self.closed_start_time is None:
                     self.closed_start_time = now
                 elif now - self.closed_start_time >= self.closed_duration_threshold:
-                    self.eye_state = "CLOSED"
+                    self.eye_state = "closed"
                     self.closed_start_time = None
                     self.open_start_time = None
             else:
                 self.closed_start_time = None
  
-        elif self.eye_state == "CLOSED":
+        elif self.eye_state == "closed":
             if ear_avg > self.upper_threshold:
                 if self.open_start_time is None:
                     self.open_start_time = now
                 elif now - self.open_start_time >= self.open_duration_threshold:
-                    self.eye_state = "OPEN"
+                    self.eye_state = "opened"
                     self.open_start_time = None
                     self.closed_start_time = None
+                    self.setting_time = now
             else:
                 self.open_start_time = None
+        
+        elif self.eye_state == "opened" and self.setting_time is not None:
+            if now - self.setting_time > self.setting_time_threshold :
+                self.eye_state = "none"
+                self.setting_time = None
+            # else:
+            #     self.eye_state ="none"
+
 
         return self.eye_state
 
