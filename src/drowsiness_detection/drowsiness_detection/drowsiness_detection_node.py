@@ -63,13 +63,13 @@ class DrowsinessDetectionNode(Node):
             eyes_status == "Eyes Calibrating..."):
             return "Calibrating Now"
 
-        if eyes_status == "CLOSED":
+        if eyes_status == "closed":
             status_parts.append("눈 감김")
 
-        if nodding_status == "Nodding" and eyes_status == "CLOSED":
+        if nodding_status == "Nodding" and eyes_status == "closed":
             status_parts.append("앞으로 끄덕임")
 
-        if nodding_status == "Nodding_Side" and eyes_status == "CLOSED":
+        if nodding_status == "Nodding_Side" and eyes_status == "closed":
             status_parts.append("옆으로 끄덕임")
 
         if yawn_status == "Yawn candidate":

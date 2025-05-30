@@ -99,7 +99,7 @@ class SessionUploaderNode(Node):
 
     # 피로도 점수 계산 함수
     def calculate_fatigue_score(self):
-        base_score = 100
+        base_score = 0
 
         if len(self.yawn_durations) <= 3:
             return base_score
@@ -108,20 +108,40 @@ class SessionUploaderNode(Node):
         penalties = [round(d.total_seconds()) for d in self.yawn_durations[3:]]
         penalty_sum = sum(penalties)
 
-        fatigue_score = max(0, base_score - penalty_sum)
+        fatigue_score = max(0, base_score + penalty_sum)
         return fatigue_score
     
     def calculate_safe_score(self):
-        base_score = 70
-        total_penalty = 0
+        eye_base = 80
+        yawn_base = 20
 
-        for start_time, duration in self.closed_periods:
+        # 눈 감김 감점 계산
+        eye_penalty = 0
+        for _, duration in self.closed_periods:
             seconds = duration.total_seconds()
-            penalty = int(round(seconds * 3))
-            total_penalty += penalty
+            if seconds < 1.0:
+                penalty = 0
+            elif seconds < 2.0:
+                penalty = 2
+            elif seconds < 3.0:
+                penalty = 4
+            else:
+                penalty = 8
+            eye_penalty += penalty
 
-        return max(0, base_score - total_penalty)
+        # 하품 감점 계산 (4번째 이후 하품만 감점)
+        yawn_penalty = 0
+        if len(self.yawn_durations) > 3:
+            penalties = [int(d) for d in self.yawn_durations[3:]]  # 초 단위로 반올림
+            yawn_penalty = sum(penalties)
 
+        # 감점 적용
+        eye_score = max(0, eye_base - eye_penalty)
+        yawn_score = max(0, yawn_base - yawn_penalty)
+
+        total_score = eye_score + yawn_score  # 100점 만점
+
+        return total_score
 
     def end_session(self):
         if not self.active or self.current_uid is None or self.session_start is None:
@@ -132,14 +152,17 @@ class SessionUploaderNode(Node):
         session_data = {
             'start_time': self.session_start.strftime('%H:%M:%S'),
             'end_time': end_time.strftime('%H:%M:%S'),
-            'duration': str(duration),
-            'blinks': self.blink_count,
+            'drowsy_eye_closed': self.blink_count,
             'yawns': self.yawn_count,
             'avg_yawn_duration': round(self.compute_avg_yawn_time(), 2),
             'peak_drowsy_time': self.compute_peak_drowsy_time(),
             'fatigue_score': self.calculate_fatigue_score(),
             'safe_score': self.calculate_safe_score()
         }
+
+        self.get_logger().info(f'[DEBUG] 저장할 데이터: {session_data}')
+        self.get_logger().info(f'[DEBUG] UID: "{self.current_uid}", Date: {self.session_start.strftime("%Y-%m-%d")}, SessionID: {self.session_id}')
+
 
         try:
             today = self.session_start.strftime('%Y-%m-%d')
@@ -168,8 +191,10 @@ def main(args=None):
     try:
         rclpy.spin(node)
     except KeyboardInterrupt:
-        node.end_session()
+        node.get_logger().info("KeyboardInterrupt 발생: 세션 종료 및 데이터 저장 시도 중...")
+        node.end_session()  # Firestore 저장까지 확실히 끝내고 종료하도록 함
     finally:
+        # shutdown은 end_session 이후에만 안전하게 실행
         rclpy.shutdown()
 
 if __name__ == '__main__':
