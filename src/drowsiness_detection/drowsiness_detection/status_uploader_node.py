@@ -24,6 +24,7 @@ class FirebaseBridgeNode(Node):
         self.active = False
         self.prev_drowsiness_status = None  
         self.prev_yawn_status = None
+        self.prev_alert_status = None
 
         self.subscription_uid = self.create_subscription(
             String,
@@ -41,6 +42,12 @@ class FirebaseBridgeNode(Node):
             String,
             '/drowsiness/status',
             self.drowsiness_status_callback,
+            10
+        )
+        self.subscription = self.create_subscription(
+            String,
+            '/alert',
+            self.alert_callback,
             10
         )
 
@@ -81,9 +88,6 @@ class FirebaseBridgeNode(Node):
             self.db.collection('users').document(self.current_uid).set({
                 'yawn status': state
             }, merge=True)
-            # self.get_logger().info(' ┌─────────────────────────────────────────────────────────────────────────┐')
-            # self.get_logger().info(f" |  하품 상태 '{state}' \n Firebase에 업로드 완료 \n 사용자 : {self.current_uid})  |")
-            # self.get_logger().info(' └─────────────────────────────────────────────────────────────────────────┘')
             self.get_logger().info(' ┌─────────────────────────────────────────────────────────────────────────┐')
             self.get_logger().info(f" |  하품 상태 '{state}' ")
             self.get_logger().info(' └─────────────────────────────────────────────────────────────────────────┘')
@@ -109,9 +113,6 @@ class FirebaseBridgeNode(Node):
             self.db.collection('users').document(self.current_uid).set({
                 'drowsiness status': state
             }, merge=True)
-            # self.get_logger().info(' ┌─────────────────────────────────────────────────────────────────────────┐')
-            # self.get_logger().info(f" |  졸음 상태 '{state}' \n Firebase에 업로드 완료 \n 사용자 : {self.current_uid})  |")
-            # self.get_logger().info(' └─────────────────────────────────────────────────────────────────────────┘')
             self.get_logger().info(' ┌─────────────────────────────────────────────────────────────────────────┐')
             self.get_logger().info(f" |  졸음 상태 '{state}' ")
             self.get_logger().info(' └─────────────────────────────────────────────────────────────────────────┘')
@@ -119,6 +120,31 @@ class FirebaseBridgeNode(Node):
         except Exception as e:
             self.get_logger().error(f"───────────────────────────── Firebase 업로드 실패: {e} ─────────────────────────────")
             
+    def alert_callback(self, msg):
+        if not self.active or not self.current_uid:
+            self.get_logger().warn("───────────────────────────── 이메일 정보 없음 -> 상태 저장 건너뜀 ─────────────────────────────")
+            return
+
+        state = msg.data
+
+        # 상태가 이전과 같음 → 아무것도 하지 않음
+        if self.prev_alert_status == state:
+            return
+        
+        self.prev_alert_status ==state 
+
+        try:
+            self.db.collection('users').document(self.current_uid).set({
+                'alert_status': state
+            }, merge=True)
+            self.get_logger().info(' ┌─────────────────────────────────────────────────────────────────────────┐')
+            self.get_logger().info(f" |  알림 상태 '{state}' ")
+            self.get_logger().info(' └─────────────────────────────────────────────────────────────────────────┘')
+
+        except Exception as e:
+            self.get_logger().error(f"───────────────────────────── Firebase 업로드 실패: {e} ─────────────────────────────")
+     
+
 def main(args=None):
     rclpy.init(args=args)
     node = FirebaseBridgeNode()

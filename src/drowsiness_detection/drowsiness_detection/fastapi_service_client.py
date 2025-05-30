@@ -8,6 +8,7 @@ import rclpy
 from rclpy.node import Node
 import threading
 from srv_interfaces.srv import Uid
+from srv_interfaces.srv import EndSession 
 from rclpy.executors import MultiThreadedExecutor
 from time import sleep
 
@@ -25,6 +26,7 @@ class FastAPIClientNode(Node):
         self.service_clients = {
             'face_register_service': self.create_client(Uid, 'face_register_service'),
             'start_drowsiness_service': self.create_client(Uid, 'start_drowsiness_service'),
+            'end_drowsiness_service': self.create_client(EndSession, 'end_drowsiness_service'),
         }
 
     def call_service(self, service_name: str, uid: str):
@@ -64,3 +66,9 @@ def face_register(data: UidModel):
 def start_drowsiness(data: UidModel):
     response = node.call_service("start_drowsiness_service", data.uid)
     return {"status": "start_drowsiness sent", "ros_response": str(response)}
+
+@app.post("/end_drowsiness")
+def end_drowsiness(data: UidModel):
+    response = node.call_service("end_drowsiness_service", data.uid)
+    return {"status": "end_drowsiness sent", "ros_response": str(response)}
+

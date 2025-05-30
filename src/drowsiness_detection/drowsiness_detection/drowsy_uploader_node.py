@@ -5,6 +5,7 @@ import firebase_admin
 from firebase_admin import credentials, firestore
 import os
 from datetime import datetime, timedelta
+from srv_interfaces.srv import EndSession
 
 class SessionUploaderNode(Node):
     def __init__(self):
@@ -34,11 +35,24 @@ class SessionUploaderNode(Node):
         self.create_subscription(String, '/eyes/status', self.eyes_callback, 10)
         self.create_subscription(String, '/yawn/status', self.yawn_callback, 10)
 
+        self.end_session_srv = self.create_service(EndSession, 'end_drowsiness_service', self.handle_end_session)
+
+
+
         self.get_logger().info(' ┌───────────────────────────────────────────────┐')
         self.get_logger().info(' |             Drowsy Upload Node Started        |')
         self.get_logger().info(' └───────────────────────────────────────────────┘')
 
+    def handle_end_session(self, request, response):
+        self.get_logger().info(f"[📩 FastAPI] end_drowsiness_service 요청 수신됨: {request.uid}")
 
+        if self.current_uid == request.uid and self.active:
+            self.end_session()
+            response.success = True
+        else:
+            response.success = False
+        return response
+    
     def uid_callback(self, msg):
         raw = msg.data
         if raw.startswith('[drowsy]'):
