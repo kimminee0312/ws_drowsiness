@@ -18,8 +18,10 @@ class MultiUidServiceNode(Node):
         # service 서버 생성
         self.face_srv = self.create_service(Uid, 'face_register_service', self.face_callback)
 
-        self.drowy_srv = self.create_service(Uid, 'start_drowsiness_service', self.drowy_callback)
+        self.drowy_start_srv = self.create_service(Uid, 'start_drowsiness_service', self.drowy_start_callback)
 
+        # self.drowy_end_srv = self.create_service(Uid, 'end_drowsiness_service', self.drowy_end_callback)
+        
         self.get_logger().info(' ┌────────────────────────────────────────────┐')
         self.get_logger().info(' |       Multi uid service server start     |')
         self.get_logger().info(' └────────────────────────────────────────────┘')
@@ -37,7 +39,7 @@ class MultiUidServiceNode(Node):
         response.message = 'face_register_service completion'
         return response
 
-    def drowy_callback(self, request, response):
+    def drowy_start_callback(self, request, response):
         uid = request.uid
         uid_msg = String()
         uid_msg.data = uid
@@ -48,6 +50,18 @@ class MultiUidServiceNode(Node):
         response.success = True
         response.message = 'start_drowsiness_service completion'
         return response
+    
+    # def drowy_end_callback(self, request, response):
+    #     uid = request.uid
+    #     uid_msg = String()
+    #     uid_msg.data = uid
+
+    #     self.uid_publisher.publish(uid_msg)
+    #     self.get_logger().info(f'uid pub to end drowsiness: {uid}')
+
+    #     response.success = True
+    #     response.message = 'end_drowsiness_service completion'
+    #     return response
 
 
 def main(args=None):

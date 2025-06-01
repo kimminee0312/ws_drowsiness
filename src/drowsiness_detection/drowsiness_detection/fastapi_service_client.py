@@ -23,32 +23,64 @@ class FastAPIClientNode(Node):
         super().__init__('fastapi_service_client')
 
         # 변수명 변경
-        self.service_clients = {
+        self.uid_clients = {
             'face_register_service': self.create_client(Uid, 'face_register_service'),
             'start_drowsiness_service': self.create_client(Uid, 'start_drowsiness_service'),
-            'end_drowsiness_service': self.create_client(EndSession, 'end_drowsiness_service'),
         }
 
-    def call_service(self, service_name: str, uid: str):
-        if service_name not in self.service_clients:
+        self.end_session_client = self.create_client(EndSession, 'end_drowsiness_service')
+
+    # ───────────────────────────────────────────────────
+    # Uid 타입 서비스 호출 (email/uid 필요)
+    # ───────────────────────────────────────────────────
+    def call_uid_service(self, service_name: str, uid: str):
+        if service_name not in self.uid_clients:
             self.get_logger().error(f"[!] Unknown service: {service_name}")
             return None
 
-        client = self.service_clients[service_name]
+        client = self.uid_clients[service_name]
+
+        if not client.wait_for_service(timeout_sec=2.0):
+            self.get_logger().error(f"[!] {service_name} is not available")
+            return None
+
         req = Uid.Request()
         req.uid = uid
+
         future = client.call_async(req)
 
-        while not future.done():
-            rclpy.spin_once(self, timeout_sec=0.1)
-            sleep(0.1)
-        return future.result()
+        rclpy.spin_until_future_complete(self, future, timeout_sec=5.0)
+        if future.done():
+            return future.result()
+        else:
+            self.get_logger().error(f"[!] {service_name} timed out")
+            return None
+
+    # ───────────────────────────────────────────────────
+    # EndSession 타입 서비스 호출 (입력 없이 호출)
+    # ───────────────────────────────────────────────────
+    def call_end_service(self):
+        client = self.end_session_client
+
+        if not client.wait_for_service(timeout_sec=2.0):
+            self.get_logger().error("[!] end_drowsiness_service is not available")
+            return None
+
+        req = EndSession.Request()
+
+        future = client.call_async(req)
+
+        rclpy.spin_until_future_complete(self, future, timeout_sec=5.0)
+        if future.done():
+            return future.result()
+        else:
+            self.get_logger().error("[!] end_drowsiness_service timed out")
+            return None
 
 # =====================================
 # FastAPI 서버 설정
 # =====================================
 node = FastAPIClientNode()
-threading.Thread(target=rclpy.spin, args=(node,), daemon=True).start()
 
 executor = MultiThreadedExecutor()
 executor.add_node(node)
@@ -59,16 +91,16 @@ class UidModel(BaseModel):
 
 @app.post("/face_register")
 def face_register(data: UidModel):
-    response = node.call_service("face_register_service", data.uid)
+    response = node.call_uid_service("face_register_service", data.uid)
     return {"status": "face_register sent", "ros_response": str(response)}
 
 @app.post("/start_drowsiness")
 def start_drowsiness(data: UidModel):
-    response = node.call_service("start_drowsiness_service", data.uid)
+    response = node.call_uid_service("start_drowsiness_service", data.uid)
     return {"status": "start_drowsiness sent", "ros_response": str(response)}
 
 @app.post("/end_drowsiness")
 def end_drowsiness(data: UidModel):
-    response = node.call_service("end_drowsiness_service", data.uid)
+    response = node.call_end_service()
     return {"status": "end_drowsiness sent", "ros_response": str(response)}
 

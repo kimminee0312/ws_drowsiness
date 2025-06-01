@@ -4,7 +4,7 @@ from std_msgs.msg import String
 import firebase_admin
 from firebase_admin import credentials, firestore
 import os
-from datetime import datetime, timedelta
+from datetime import datetime
 from srv_interfaces.srv import EndSession
 
 class SessionUploaderNode(Node):
@@ -35,7 +35,7 @@ class SessionUploaderNode(Node):
         self.create_subscription(String, '/eyes/status', self.eyes_callback, 10)
         self.create_subscription(String, '/yawn/status', self.yawn_callback, 10)
 
-        self.end_session_srv = self.create_service(EndSession, 'end_drowsiness_service', self.handle_end_session)
+        self.drowsy_end_srv = self.create_service(EndSession, 'end_drowsiness_service', self.drowsy_end_callback)
 
 
 
@@ -43,10 +43,8 @@ class SessionUploaderNode(Node):
         self.get_logger().info(' |             Drowsy Upload Node Started        |')
         self.get_logger().info(' └───────────────────────────────────────────────┘')
 
-    def handle_end_session(self, request, response):
-        self.get_logger().info(f"[📩 FastAPI] end_drowsiness_service 요청 수신됨: {request.uid}")
-
-        if self.current_uid == request.uid and self.active:
+    def drowsy_end_callback(self, request, response):
+        if self.active:
             self.end_session()
             response.success = True
         else:
@@ -57,12 +55,29 @@ class SessionUploaderNode(Node):
         raw = msg.data
         if raw.startswith('[drowsy]'):
             self.current_uid = raw.replace('[drowsy]', '')
+            # 이미 진행 중인 세션이 있다면 무시
+            if self.active:
+                self.get_logger().warn(f"이미 세션({self.current_uid})이 진행 중입니다. 새로운 요청 무시: {uid}")
+                return
+            
+            # 초기화
             self.session_start = datetime.now()
             self.session_id = self.session_start.strftime('%H_%M_%S')
             self.active = True
-            self.get_logger().info(f'[세션 시작] UID: {self.current_uid}, 시작 시간: {self.session_start.strftime("%H:%M:%S")}')
-        else:
-            self.end_session()
+
+            # 눈/하품 통계 초기화
+            self.blink_count = 0
+            self.closed_periods.clear()
+            self.eye_closed_start = None
+
+            self.yawn_count = 0
+            self.yawn_durations.clear()
+            self.current_yawn_start = None
+
+            self.get_logger().info(' ┌───────────────────────────────────────────────┐')
+            self.get_logger().info(' |                    세션 시작                    |')
+            self.get_logger().info(' └───────────────────────────────────────────────┘')
+
 
     # 눈 감김 횟수 및 지속 시간(시간시간 포함) 저장 
     def eyes_callback(self, msg):
@@ -126,8 +141,8 @@ class SessionUploaderNode(Node):
         return fatigue_score
     
     def calculate_safe_score(self):
-        eye_base = 80
-        yawn_base = 20
+        eye_base = 60
+        yawn_base = 40
 
         # 눈 감김 감점 계산
         eye_penalty = 0
@@ -135,25 +150,23 @@ class SessionUploaderNode(Node):
             seconds = duration.total_seconds()
             if seconds < 1.0:
                 penalty = 0
-            elif seconds < 2.0:
-                penalty = 2
             elif seconds < 3.0:
-                penalty = 4
+                penalty = 3
             else:
-                penalty = 8
+                penalty = 6
             eye_penalty += penalty
 
         # 하품 감점 계산 (4번째 이후 하품만 감점)
         yawn_penalty = 0
         if len(self.yawn_durations) > 3:
             penalties = [int(d) for d in self.yawn_durations[3:]]  # 초 단위로 반올림
-            yawn_penalty = sum(penalties)
+            yawn_penalty = sum(penalties)/2
 
         # 감점 적용
         eye_score = max(0, eye_base - eye_penalty)
         yawn_score = max(0, yawn_base - yawn_penalty)
 
-        total_score = eye_score + yawn_score  # 100점 만점
+        total_score = int(eye_score + yawn_score)  # 100점 만점
 
         return total_score
 
@@ -162,7 +175,7 @@ class SessionUploaderNode(Node):
             return
 
         end_time = datetime.now()
-        duration = end_time - self.session_start
+        # duration = end_time - self.session_start
         session_data = {
             'start_time': self.session_start.strftime('%H:%M:%S'),
             'end_time': end_time.strftime('%H:%M:%S'),
@@ -191,13 +204,14 @@ class SessionUploaderNode(Node):
         self.current_uid = None
         self.session_start = None
         self.session_id = None
+
         self.blink_count = 0
+        self.closed_periods = []
+        self.eye_closed_start = None
+
         self.yawn_count = 0
         self.yawn_durations = []
         self.current_yawn_start = None
-        self.closed_periods = []
-        self.eye_state = "none"
-        self.eye_closed_start = None
 
 def main(args=None):
     rclpy.init(args=args)
@@ -206,9 +220,9 @@ def main(args=None):
         rclpy.spin(node)
     except KeyboardInterrupt:
         node.get_logger().info("KeyboardInterrupt 발생: 세션 종료 및 데이터 저장 시도 중...")
-        node.end_session()  # Firestore 저장까지 확실히 끝내고 종료하도록 함
+        if node.active:
+            node.end_session()
     finally:
-        # shutdown은 end_session 이후에만 안전하게 실행
         rclpy.shutdown()
 
 if __name__ == '__main__':
