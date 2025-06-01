@@ -134,7 +134,7 @@ class SessionUploaderNode(Node):
             return base_score
 
         # 4번째 하품부터 각 초를 감점
-        penalties = [round(d.total_seconds()) for d in self.yawn_durations[3:]]
+        penalties = [round(d) for d in self.yawn_durations[3:]]
         penalty_sum = sum(penalties)
 
         fatigue_score = max(0, base_score + penalty_sum)
