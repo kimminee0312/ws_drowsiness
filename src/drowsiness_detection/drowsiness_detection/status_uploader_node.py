@@ -131,7 +131,7 @@ class FirebaseBridgeNode(Node):
         if self.prev_alert_status == state:
             return
         
-        self.prev_alert_status ==state 
+        self.prev_alert_status = state 
 
         try:
             self.db.collection('users').document(self.current_uid).set({

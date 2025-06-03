@@ -193,8 +193,19 @@ class SessionUploaderNode(Node):
 
         try:
             today = self.session_start.strftime('%Y-%m-%d')
-            doc_ref = self.db.collection('users').document(self.current_uid)                .collection('DrowsyData').document(today)                .collection('Sessions').document(self.session_id)
-            doc_ref.set(session_data)
+            today = self.session_start.strftime('%Y-%m-%d')
+
+            # ① 날짜(부모) 문서를 먼저 생성(또는 병합)
+            date_doc = self.db.collection('users') \
+                            .document(self.current_uid) \
+                            .collection('DrowsyData') \
+                            .document(today)
+
+            date_doc.set({"latest": firestore.SERVER_TIMESTAMP}, merge=True)   # ← 단 한 줄 추가
+
+            # ② 그 아래 Sessions 서브컬렉션에 세션 데이터 저장
+            date_doc.collection('Sessions').document(self.session_id).set(session_data)
+
             self.get_logger().info(f'✅ 세션 업로드 완료: {today}/{self.session_id}')
         except Exception as e:
             self.get_logger().error(f'❌ 업로드 실패: {e}')
