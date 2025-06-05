@@ -1,26 +1,25 @@
 import rclpy
 from rclpy.node import Node
+from sensor_msgs.msg import Image
 from std_msgs.msg import String
 from cv_bridge import CvBridge
-from sensor_msgs.msg import Image
-
 import cv2
+import mediapipe as mp
+import numpy as np
 import torch
 import torch.nn.functional as F
-import numpy as np
 from torchvision import transforms
-import mediapipe as mp
 import torch.nn as nn
 import os
 
-# ✅ 감정 레이블 정의 (3클래스)
+# 감정 레이블 정의
 EMOTION_LABELS = {
     0: "positive",
     1: "neutral",
     2: "negative"
 }
 
-# ✅ 3클래스 DeepCNN 모델 정의
+# DeepCNN 모델 정의
 class DeepCNN(nn.Module):
     def __init__(self, num_classes=3):
         super(DeepCNN, self).__init__()
@@ -28,11 +27,9 @@ class DeepCNN(nn.Module):
             nn.Conv2d(3, 32, 3, padding=1), nn.BatchNorm2d(32), nn.ReLU(),
             nn.Conv2d(32, 64, 3, padding=1), nn.BatchNorm2d(64), nn.ReLU(),
             nn.MaxPool2d(2), nn.Dropout(0.25),
-
             nn.Conv2d(64, 128, 3, padding=1), nn.BatchNorm2d(128), nn.ReLU(),
             nn.Conv2d(128, 128, 3, padding=1), nn.BatchNorm2d(128), nn.ReLU(),
             nn.MaxPool2d(2), nn.Dropout(0.25),
-
             nn.Conv2d(128, 256, 3, padding=1), nn.BatchNorm2d(256), nn.ReLU(),
             nn.Conv2d(256, 256, 3, padding=1), nn.BatchNorm2d(256), nn.ReLU(),
             nn.MaxPool2d(2), nn.Dropout(0.25)
@@ -50,22 +47,30 @@ class DeepCNN(nn.Module):
         x = self.features(x)
         return self.classifier(x)
 
-# ✅ ROS 노드 클래스
+# ROS 노드 클래스
 class EmotionPublishNode(Node):
     def __init__(self):
         super().__init__('face_emotion_node')
         self.publisher_ = self.create_publisher(String, '/emotion/status', 10)
-        self.image_pub = self.create_publisher(Image, '/camera/image_raw', 10)
         self.bridge = CvBridge()
+
+        # 🔹 사용자 ID 초기화
+        self.current_uid = None
+        self.active = False
+
+        # 🔹 UID 수신 구독자
+        self.create_subscription(String, '/current_uid', self.uid_callback, 10)
+
+        self.create_subscription(Image, '/camera/image_raw', self.image_callback, 10)
+
         # 모델 준비
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.model = DeepCNN()
-        model_path = "/home/kml/workspace/ws_drowsiness/src/face_identification/model/korean_emotion_model_3class_finetuned_final.pth"  # 모델 경로 수정
+        model_path = "/home/kml/workspace/ws_drowsiness/src/face_identification/model/korean_emotion_model_3class_finetuned_final.pth"
         self.model.load_state_dict(torch.load(model_path, map_location=self.device))
         self.model = self.model.to(self.device)
         self.model.eval()
 
-        # 전처리 정의 (RGB)
         self.transform = transforms.Compose([
             transforms.ToPILImage(),
             transforms.Resize((48, 48)),
@@ -73,26 +78,33 @@ class EmotionPublishNode(Node):
             transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])
         ])
 
-        # Mediapipe 얼굴 검출
+        self.get_logger().info("🔐 감정 인식 노드 실행중 ...")
+
         self.face_detection = mp.solutions.face_detection.FaceDetection(model_selection=0, min_detection_confidence=0.5)
 
-        # 웹캠 열기
-        self.cap = cv2.VideoCapture(0)
-        self.cap.set(cv2.CAP_PROP_FPS, 30)  
-        if not self.cap.isOpened():
-            self.get_logger().error("웹캠을 열 수 없습니다.")
-            exit()
-
-        self.timer = self.create_timer(1.0/30.0, self.timer_callback)
-
-    def timer_callback(self):
-        ret, frame = self.cap.read()
-        if not ret:
-            self.get_logger().warn("프레임을 읽을 수 없습니다.")
+    def uid_callback(self, msg):
+        raw = msg.data.strip()
+        if not raw.startswith("[emotion]"):
+            self.get_logger().info("⚠️ [emotion] prefix 없음 → 감정 인식 비활성화")
+            self.active = False
+            self.current_uid = None
             return
-        
-        ros_image = self.bridge.cv2_to_imgmsg(frame, encoding='bgr8')
-        self.image_pub.publish(ros_image)
+
+        self.current_uid = raw.replace("[emotion]", "").strip()
+        self.active = True
+        self.get_logger().info(f"✅ 감정 인식 시작 - 사용자 UID: {self.current_uid}")
+
+    def image_callback(self, img_msg: Image):
+        # 활성화 상태가 아니면 바로 리턴
+        if not self.active:
+            return
+
+        # 1) ROS Image → OpenCV BGR 이미지로 변환
+        try:
+            frame = self.bridge.imgmsg_to_cv2(img_msg, desired_encoding='bgr8')
+        except Exception as e:
+            self.get_logger().warn(f"CVBridge 변환 실패: {e}")
+            return
 
         frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         result = self.face_detection.process(frame_rgb)
@@ -126,13 +138,10 @@ class EmotionPublishNode(Node):
                     emotion = EMOTION_LABELS[pred]
                     confidence = probs[0][pred].item()
 
-                # ✅ 토픽 발행
                 msg = String()
                 msg.data = f"{emotion} ({confidence*100:.1f}%)"
                 self.publisher_.publish(msg)
-                self.get_logger().info(f"발행: {msg.data}")
 
-                # ✅ 시각화
                 cv2.rectangle(output_frame, (x_min, y_min), (x_max, y_max), (0, 255, 0), 2)
                 label_text = f"{emotion} ({confidence*100:.1f}%)"
                 cv2.putText(output_frame, label_text, (x_min, y_min - 10),
