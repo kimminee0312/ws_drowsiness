@@ -26,6 +26,8 @@ class FastAPIClientNode(Node):
         self.uid_clients = {
             'face_register_service': self.create_client(Uid, 'face_register_service'),
             'start_drowsiness_service': self.create_client(Uid, 'start_drowsiness_service'),
+            'start_emotion_service': self.create_client(Uid, 'start_emotion_service'),
+
         }
 
         self.end_session_client = self.create_client(EndSession, 'end_drowsiness_service')
@@ -103,4 +105,9 @@ def start_drowsiness(data: UidModel):
 def end_drowsiness(data: UidModel):
     response = node.call_end_service()
     return {"status": "end_drowsiness sent", "ros_response": str(response)}
+
+@app.post("/start_emotion")
+def start_drowsiness(data: UidModel):
+    response = node.call_uid_service("start_emotion_service", data.uid)
+    return {"status": "start_emotion sent", "ros_response": str(response)}
 

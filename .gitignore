@@ -21,7 +21,6 @@ performance_evaluation/
 src/drowsiness_detection/drowsiness_detection/shape_predictor_68_face_landmarks_GTX.dat
 src/drowsiness_detection/drowsiness_detection/shape_predictor_68_face_landmarks.dat
 
-src/srv_interfaces
 src/dream.rviz
 src/drowsiness_detection/resource/drowsiness_detection
 src/dream.rviz

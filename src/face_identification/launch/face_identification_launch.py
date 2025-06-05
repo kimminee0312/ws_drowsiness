@@ -14,5 +14,11 @@ def generate_launch_description():
             executable='face_identifier_node',
             name='face_identifier_node',
             output='screen'
+        ),
+        Node(
+            package='face_identification',
+            executable='face_emotion_node',
+            name='face_emotion_node',
+            output='screen'
         )
     ])

@@ -25,6 +25,7 @@ setup(
         'console_scripts': [
             'face_register_node = face_identification.face_register_node:main',
             'face_identifier_node = face_identification.face_identifier_node:main',
+            'face_emotion_node = face_identification.face_emotion_node:main',
         ],
     },
 )
