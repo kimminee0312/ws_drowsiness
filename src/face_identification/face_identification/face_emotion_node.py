@@ -12,14 +12,12 @@ from torchvision import transforms
 import torch.nn as nn
 import os
 
-# 감정 레이블 정의
 EMOTION_LABELS = {
     0: "positive",
     1: "neutral",
     2: "negative"
 }
 
-# DeepCNN 모델 정의
 class DeepCNN(nn.Module):
     def __init__(self, num_classes=3):
         super(DeepCNN, self).__init__()
@@ -47,23 +45,19 @@ class DeepCNN(nn.Module):
         x = self.features(x)
         return self.classifier(x)
 
-# ROS 노드 클래스
 class EmotionPublishNode(Node):
     def __init__(self):
         super().__init__('face_emotion_node')
         self.publisher_ = self.create_publisher(String, '/emotion/status', 10)
         self.bridge = CvBridge()
+        self.latest_frame = None  # 🟡 최신 프레임 저장용
 
-        # 🔹 사용자 ID 초기화
         self.current_uid = None
         self.active = False
 
-        # 🔹 UID 수신 구독자
         self.create_subscription(String, '/current_uid', self.uid_callback, 10)
-
         self.create_subscription(Image, '/camera/image_raw', self.image_callback, 10)
 
-        # 모델 준비
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.model = DeepCNN()
         model_path = "/home/kml/workspace/ws_drowsiness/src/face_identification/model/korean_emotion_model_3class_finetuned_final.pth"
@@ -78,9 +72,12 @@ class EmotionPublishNode(Node):
             transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])
         ])
 
-        self.get_logger().info("🔐 감정 인식 노드 실행중 ...")
-
         self.face_detection = mp.solutions.face_detection.FaceDetection(model_selection=0, min_detection_confidence=0.5)
+
+        # 🟢 감정 추론 주기를 0.33초 (약 3FPS)로 제한
+        self.timer = self.create_timer(0.33, self.timer_callback)
+
+        self.get_logger().info("🔐 감정 인식 노드 실행 중...")
 
     def uid_callback(self, msg):
         raw = msg.data.strip()
@@ -95,17 +92,18 @@ class EmotionPublishNode(Node):
         self.get_logger().info(f"✅ 감정 인식 시작 - 사용자 UID: {self.current_uid}")
 
     def image_callback(self, img_msg: Image):
-        # 활성화 상태가 아니면 바로 리턴
         if not self.active:
             return
-
-        # 1) ROS Image → OpenCV BGR 이미지로 변환
         try:
-            frame = self.bridge.imgmsg_to_cv2(img_msg, desired_encoding='bgr8')
+            self.latest_frame = self.bridge.imgmsg_to_cv2(img_msg, desired_encoding='bgr8')
         except Exception as e:
             self.get_logger().warn(f"CVBridge 변환 실패: {e}")
+
+    def timer_callback(self):
+        if not self.active or self.latest_frame is None:
             return
 
+        frame = self.latest_frame.copy()
         frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         result = self.face_detection.process(frame_rgb)
 
@@ -139,7 +137,7 @@ class EmotionPublishNode(Node):
                     confidence = probs[0][pred].item()
 
                 msg = String()
-                msg.data = f"{emotion} ({confidence*100:.1f}%)"
+                msg.data = emotion
                 self.publisher_.publish(msg)
 
                 cv2.rectangle(output_frame, (x_min, y_min), (x_max, y_max), (0, 255, 0), 2)
@@ -154,7 +152,6 @@ class EmotionPublishNode(Node):
 
     def destroy_node(self):
         super().destroy_node()
-        self.cap.release()
         self.face_detection.close()
         cv2.destroyAllWindows()
 

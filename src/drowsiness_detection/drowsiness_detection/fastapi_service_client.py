@@ -10,7 +10,6 @@ import threading
 from srv_interfaces.srv import Uid
 from srv_interfaces.srv import EndSession 
 from rclpy.executors import MultiThreadedExecutor
-from time import sleep
 
 app = FastAPI()
 rclpy.init()
@@ -22,22 +21,25 @@ class FastAPIClientNode(Node):
     def __init__(self):
         super().__init__('fastapi_service_client')
 
-        # 변수명 변경
+        # ─ Uid 타입 서비스 클라이언트 맵
         self.uid_clients = {
             'face_register_service': self.create_client(Uid, 'face_register_service'),
             'start_drowsiness_service': self.create_client(Uid, 'start_drowsiness_service'),
             'start_emotion_service': self.create_client(Uid, 'start_emotion_service'),
-
         }
 
-        self.end_session_client = self.create_client(EndSession, 'end_drowsiness_service')
+        # ─ EndSession 타입 서비스 클라이언트 맵 
+        self.end_session_clients = { 
+            'end_drowsiness_service': self.create_client(EndSession, 'end_drowsiness_service'),
+            'end_emotion_service': self.create_client(EndSession, 'end_emotion_service'),
+        }
 
     # ───────────────────────────────────────────────────
     # Uid 타입 서비스 호출 (email/uid 필요)
     # ───────────────────────────────────────────────────
     def call_uid_service(self, service_name: str, uid: str):
         if service_name not in self.uid_clients:
-            self.get_logger().error(f"[!] Unknown service: {service_name}")
+            self.get_logger().error(f"[!] Unknown Uid service: {service_name}")
             return None
 
         client = self.uid_clients[service_name]
@@ -50,8 +52,8 @@ class FastAPIClientNode(Node):
         req.uid = uid
 
         future = client.call_async(req)
-
         rclpy.spin_until_future_complete(self, future, timeout_sec=5.0)
+
         if future.done():
             return future.result()
         else:
@@ -61,22 +63,25 @@ class FastAPIClientNode(Node):
     # ───────────────────────────────────────────────────
     # EndSession 타입 서비스 호출 (입력 없이 호출)
     # ───────────────────────────────────────────────────
-    def call_end_service(self):
-        client = self.end_session_client
+    def call_end_service(self, service_name: str):
+        if service_name not in self.end_session_clients:
+            self.get_logger().error(f"[!] Unknown EndSession service: {service_name}")
+            return None
+        
+        client = self.end_session_clients[service_name]
 
         if not client.wait_for_service(timeout_sec=2.0):
-            self.get_logger().error("[!] end_drowsiness_service is not available")
+            self.get_logger().error(f"[!] {service_name} is not available")
             return None
 
         req = EndSession.Request()
-
         future = client.call_async(req)
-
         rclpy.spin_until_future_complete(self, future, timeout_sec=5.0)
+
         if future.done():
             return future.result()
         else:
-            self.get_logger().error("[!] end_drowsiness_service timed out")
+            self.get_logger().error(f"[!] {service_name} timed out")
             return None
 
 # =====================================
@@ -87,6 +92,7 @@ node = FastAPIClientNode()
 executor = MultiThreadedExecutor()
 executor.add_node(node)
 threading.Thread(target=executor.spin, daemon=True).start()
+
 # FastAPI 모델
 class UidModel(BaseModel):
     uid: str
@@ -102,12 +108,16 @@ def start_drowsiness(data: UidModel):
     return {"status": "start_drowsiness sent", "ros_response": str(response)}
 
 @app.post("/end_drowsiness")
-def end_drowsiness(data: UidModel):
-    response = node.call_end_service()
+def end_drowsiness():
+    response = node.call_end_service("end_drowsiness_service")
     return {"status": "end_drowsiness sent", "ros_response": str(response)}
 
 @app.post("/start_emotion")
-def start_drowsiness(data: UidModel):
+def start_emotion(data: UidModel):
     response = node.call_uid_service("start_emotion_service", data.uid)
     return {"status": "start_emotion sent", "ros_response": str(response)}
 
+@app.post("/end_emotion")
+def end_emotion():
+    response = node.call_end_service("end_emotion_service")
+    return {"status": "end_emotion sent", "ros_response": str(response)}

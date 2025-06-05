@@ -9,7 +9,7 @@ from srv_interfaces.srv import EndSession
 
 class SessionUploaderNode(Node):
     def __init__(self):
-        super().__init__('drowsy_uploader_node')
+        super().__init__('drowsy_session_uploader_node')
 
         key_path = os.path.expanduser('~/workspace/ws_drowsiness/firebase-key.json')
         cred = credentials.Certificate(key_path)

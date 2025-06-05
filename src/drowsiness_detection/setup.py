@@ -39,7 +39,7 @@ setup(
             'drowsiness_detection_node = drowsiness_detection.drowsiness_detection_node:main', 
             'alert_node = drowsiness_detection.alert_node:main',
             'status_uploader_node = drowsiness_detection.status_uploader_node:main',
-            'drowsy_uploader_node = drowsiness_detection.drowsy_uploader_node:main',
+            'drowsy_session_uploader_node = drowsiness_detection.drowsy_session_uploader_node:main',
         ],
     },
     zip_safe=False,

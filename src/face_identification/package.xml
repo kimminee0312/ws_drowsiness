@@ -1,23 +1,19 @@
 <?xml version="1.0"?>
-<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
   <name>face_identification</name>
-  <version>0.0.0</version>
-  <description>TODO: Package description</description>
+  <version>0.1.0</version>
+  <description>Face identification nodes for the drowsiness system</description>
   <maintainer email="kimminee0312@konkuk.ac.kr">kml</maintainer>
-  <license>TODO: License declaration</license>
+  <license>Apache-2.0</license>
 
-  <depend>rclpy</depend>
-  <depend>sensor_msgs</depend>
-  <depend>std_msgs</depend>
-  <depend>cv_bridge</depend>
+  <!-- ament_python을 빌드툴로 지정 -->
+  <buildtool_depend>ament_python</buildtool_depend>
 
-  <exec_depend>opencv-python</exec_depend>
-  <exec_depend>mediapipe</exec_depend>
-  <exec_depend>keras-facenet</exec_depend>
-  <exec_depend>firebase-admin</exec_depend>
+  <!-- ROS 런타임 의존성만 exec_depend로 선언 -->
   <exec_depend>rclpy</exec_depend>
+  <exec_depend>sensor_msgs</exec_depend>
   <exec_depend>std_msgs</exec_depend>
+  <exec_depend>cv_bridge</exec_depend>
 
   <test_depend>ament_copyright</test_depend>
   <test_depend>ament_flake8</test_depend>

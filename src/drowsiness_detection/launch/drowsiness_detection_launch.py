@@ -41,8 +41,8 @@ def generate_launch_description():
         ),
         Node(
             package='drowsiness_detection',
-            executable='drowsy_uploader_node',
-            name='drowsy_uploader_node',
+            executable='drowsy_session_uploader_node',
+            name='drowsy_session_uploader_node',
             output='screen'
         ),
         Node(
