@@ -35,7 +35,7 @@ class EmotionSessionUploaderNode(Node):
         # 구독 및 서비스
         self.create_subscription(String, '/current_uid', self.uid_callback, 10)
         self.create_subscription(String, '/emotion/status', self.emotion_callback, 10)
-        self.create_service(EndSession, 'end_emotion_service', self.emotion_end_callback)
+        self.create_service(EndSession, 'end_emotion_service', self.end_session_callback)
 
         self.get_logger().info('🧠 Emotion Uploader Node Started')
 
@@ -62,7 +62,7 @@ class EmotionSessionUploaderNode(Node):
             return
 
         try:
-            label = msg.data.split(' ')[0]  # ex) "positive (84.3%)"
+            label = msg.data.strip()
             now = datetime.now()
 
             if self.current_emotion and self.prev_time:
@@ -74,7 +74,7 @@ class EmotionSessionUploaderNode(Node):
         except Exception as e:
             self.get_logger().error(f"⚠️ 감정 메시지 파싱 실패: {e}")
 
-    def emotion_end_callback(self, request, response):
+    def end_session_callback(self, request, response):
         if self.active:
             self.end_session()
             response.success = True
@@ -97,7 +97,10 @@ class EmotionSessionUploaderNode(Node):
         if total == 0:
             score = 0
         else:
-            score = int((self.durations['positive'] + 0.5 * self.durations['neutral']) / total * 100)
+            positive_ratio = self.durations['positive'] / total
+            negative_ratio = self.durations['negative'] / total
+            score = 70 + int(positive_ratio * 30) - int(negative_ratio * 30)
+            score = max(0, min(score, 100))  # 0~100 범위 제한
 
         summary = max(self.durations.items(), key=lambda x: x[1])[0]
 

@@ -181,7 +181,8 @@ class EyeDetector:
             self.opened_mean = np.mean(opened_ear)
             self.eye_threshold = (self.closed_mean + self.opened_mean) / 2
 
-            self.lower_threshold = self.closed_mean * (1 + self.margin_ratio)
+            # self.lower_threshold = self.closed_mean * (1 + self.margin_ratio)
+            self.lower_threshold = self.closed_mean * (1)
             self.upper_threshold = self.opened_mean * (1 - self.margin_ratio*1.5)
             # self.upper_threshold = self.opened_mean - 0.1
 
