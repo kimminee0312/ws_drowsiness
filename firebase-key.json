@@ -1,13 +1,1 @@
-{
-  "type": "service_account",
-  "project_id": "drowsinessapp-d3c09",
-  "private_key_id": "caab26ec510902c6ea0fbcb7628941c150224e78",
-  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCtXYWS6HmdXmeD\nCKq/VcEahqBMeIkXyKJMQpS0i03CT/T6tVXywkEKHhOIMBm+YeVs6wJdUwufLzVe\nroz5n0uzOR1kLtPCnPaOj39f7DmfIbCjsz056oXY5YAQtX/aR3PopA+f6ZaIAzbO\nt7VJc/giGqqDzN7QrG9oibvLOIVD2tCQ7UKnzmCnisrXpoikv+1dInj2g/y5IAQZ\nfNXbNl/7JLIRhYzefSQMnmUP3bFoairMBFxHecEGtixefmotd9tYH4ThJYfuvaKe\nTm/Zs26muEnTAmkKOWjz5kgjYQhbpzybeQ0u+IqYSq5MDZ88Kc7BVNyIGTq0h+Ll\nBkHwzVkzAgMBAAECggEATdjrdJLgnVo5Z/0Z0y4aNqOSUpRjlyL4Qf850DKneaQ2\n0Odhj09MLlNgGOzkenlyMKz81FRIqTPlJr2Bv0uZDgMNICHo5ABgtJZaL4QfQcY6\nj9+aFCor7T/s+FPP8//W2/XjsD6PYkbzMvMKPFAPcZ0AyYtS2Gg95LbIdZJNQTC/\n9VkDK/ghdL8NzNJnyiv34vvuFkKeuQie/nQvvMm0fQYlXq43FzWI/YIj2QghjR04\nj8yEtPRYUat5PmYcn5fQBeVSoVyQ3Y00m9XNQAJ3xNjDQMt6y2gHUsqG73aHJ+la\nfF4z6WhKG4OcX+RYERqWLZX2S+Klyq1exMDof0cF3QKBgQDppCfK5UTDXrQbcar4\n3rEWBeJid8K1xIf+eTagdTFMnsxjbXhQbGHg1U9wqLFEK/oBcUIE+RG/SlmbsAKY\n99pe5fATGmhvlZgRrGjpDGcY7d0nOF6bvH7bQPgVDqyNpPt4bZWXYp6Tx1QTzILw\nrUJn6MdAP7xuWeW3uSuk/2REFQKBgQC99LNncM6uX/gkK9COkFbO0ypiFFwFNyN5\n6PQIBkUW68YSnm+Ly3ZIiP7nJyK7G5wiOtZYLkagSxJBGFbdDAwdgvDoIBOBUZLX\nnreQfFI4wGOb/pTKfY/en5ke8DVdCqfmhojYFEPEs+b3yojKSXHsR3XihSblvCuP\n2UN9sKeSJwKBgEvNnbd/gTrd7BOHYpBSOCRMDnIiJwMwW2sdyrJus2sHjoqnxsRZ\nFbyLmLWVlcXnerqjE2dno/FrXv1bMsyMhcYKVkTsaXviji8VwAf0pTJ6YilKaa+f\njYz3XEYAt81Q/OHKtCEktwx9PHMcBFOv8v6hkJvw0eL/ub9NDbL/xXktAoGAA+VA\nyJ5HnsvZCuTbIhFTtmoeNGS2fmTjFVzxpDh8sjujlD4ri3JgupwUnijvTWcDjLAo\nNSa9zAu+FBersFzO4swMpLYDsGM737Ahk5T5GrDXWhuecYihqq8bNMc4UPAnAVNA\n+y1vNll6IxrEM2HONEpC4KJaaduyCQEroSg+R4ECgYEAgqd+nRW6NTdxUOnhAsuV\nDVa22oRhC/NqhtW6+qKSIajHVYCTaOAEuj5P3bBOrXYgAMeZUoqzfEhg60sc32Zx\nfatdHrF2r+EVWhrvWcyzmT1B+jgiS7Y3o/aiSEs3kKQYoqM+DzqjCLnN89dDo/lN\nwDC5l9lpq669lOI29K7EO/4=\n-----END PRIVATE KEY-----\n",
-  "client_email": "firebase-adminsdk-fbsvc@drowsinessapp-d3c09.iam.gserviceaccount.com",
-  "client_id": "105219590858149203107",
-  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-  "token_uri": "https://oauth2.googleapis.com/token",
-  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-fbsvc%40drowsinessapp-d3c09.iam.gserviceaccount.com",
-  "universe_domain": "googleapis.com"
-}
+
